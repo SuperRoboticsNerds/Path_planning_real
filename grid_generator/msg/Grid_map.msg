@@ -1,4 +1,1 @@
-int x;
-int y;
-int weight;
-int observed;
+Grid_map_struct[] gridVector

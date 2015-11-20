@@ -5,6 +5,8 @@
 #include "ras_arduino_msgs/PWM.h"
 #include "ras_arduino_msgs/Encoders.h"
 #include "geometry_msgs/Twist.h"
+#include "grid_generator/Grid_map.h"
+#include "grid_generator/Grid_map_struct.h"
 #include <sstream>
 #include <math.h>
 #include <stdlib.h>
@@ -19,7 +21,7 @@
 #include <nav_msgs/Odometry.h>
 #include <iostream>
 #include <cmath> 
-
+//#include "grid_generator/Grid_map_struct.h"
 
 
 
@@ -27,19 +29,19 @@
 class GridGeneratorNode
 {
 public:
-    struct position_node{
-        int x;
-        int y;
-        int weight;
-        int observed;
-    };
-    std::vector< std::vector<struct position_node> > matrix_a;
-
+    // struct position_node{
+    //     int x;
+    //     int y;
+    //     int weight;
+    //     int observed;
+    // };
+    std::vector< std::vector<grid_generator::Grid_map_struct> > matrix_a;
+    std::vector<grid_generator::Grid_map_struct> grid_map_send;
     ros::NodeHandle n;
 
     ros::Publisher map_pub_;
     ros::Publisher grid_map_pub;
-    ros::Publisher map_query_publisher;
+    ros::Publisher map_query_pub;
 
     ros::Subscriber encoders_sub_;
     ros::Subscriber twist_sub_;
@@ -60,7 +62,8 @@ public:
         }
  
         //twist_sub_ = n.subscribe<geometry_msgs::Twist>("/motor_controller/twist",1,&GridGeneratorNode::matrix_function,this);
-        map_query_publisher = n.advertise<std_msgs::Bool>("/map_reader/query", 100);
+        grid_map_pub = n.advertise<grid_generator::Grid_map>("test", 10);
+        map_query_pub = n.advertise<std_msgs::Bool>("/map_reader/query", 100);
         map_subscriber = n.subscribe<localization::Map_message>("/map_reader/map", 1, &GridGeneratorNode::read_map_2,this);
         //grid_map_pub = n.advertise<std::vector< std::vector<struct position_node> >("test",1);
         //twist_sub_ = n.subscribe<geometry_msgs::Twist>("/motor_controller/twist",1,&MotorcontrollerNode::twist_function,this);
@@ -75,8 +78,8 @@ public:
 
 void matrix_function()
     {
-    for(int i=0; i<col; i++){
-        for(int j=0; j<rows;j++){
+    for(int i=0; i<rows; i++){
+        for(int j=0; j<col;j++){
             matrix_a[i][j].weight = 0;
             matrix_a[i][j].observed = 0;
         }
@@ -84,10 +87,23 @@ void matrix_function()
 
     //std::cout << "data:"<< matrix_a[5][7].weight << ", "<<  matrix_a[5][7].observed<<std::endl;
     }
-void read_map_function(){
+void read_map_request_function(){
     std_msgs::Bool bool_msg;
     bool_msg.data = true;
-    map_query_publisher.publish(bool_msg);
+    map_query_pub.publish(bool_msg);
+}
+void send_grid_function(){
+    for(int i=0; i<rows; i++){
+        for(int j=0; j<col;j++){
+            grid_map_send.push_back(matrix_a[i][j]);
+        }
+    }
+    grid_generator::Grid_map msg;
+    grid_generator::Grid_map_struct data;
+    
+
+    //grid_map_pub.publish();
+   
 }
 
 void read_map_2(const localization::Map_message::ConstPtr& msg){
@@ -188,8 +204,8 @@ int main(int argc, char **argv)
 {
     int counter;
     counter=0;
-    ros::init(argc, argv, "grid_generator");
-    GridGeneratorNode grid_generator_node;
+    ros::init(argc, argv, "grid_generator_node");
+    GridGeneratorNode grid_generator_node_2;
 
     // Control @ 10 Hz
     double control_frequency = 10.0;
@@ -197,12 +213,12 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(control_frequency);
 	// while (ros::ok())
 
-    while(grid_generator_node.n.ok())
+    while(grid_generator_node_2.n.ok())
     {
         if (counter==5){
-            grid_generator_node.read_map_function();
+            grid_generator_node_2.read_map_request_function();
         }
-        grid_generator_node.matrix_function();
+        grid_generator_node_2.matrix_function();
         
         counter++;
         ros::spinOnce();
