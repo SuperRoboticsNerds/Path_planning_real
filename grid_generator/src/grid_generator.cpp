@@ -28,6 +28,8 @@ class GridGeneratorNode
 {
 public:
     struct position_node{
+        int x;
+        int y;
         int weight;
         int observed;
     };
