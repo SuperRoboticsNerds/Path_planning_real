@@ -2,10 +2,12 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
-#include <geometry_msgs/Point.h>
-#include <geometry_msgs/PointStamped.h>
 
-//#include "ras_msgs/GridCells.h"
+#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
+
+#include <std_msgs/Float32MultiArray.h>
+
 
 
 struct node
@@ -13,17 +15,23 @@ struct node
 	int x;
 	int y;
 	int weight;
-	int seen;
+	int observed;
 };
 
 //Global 
-int map_max_dist = 10; //in cm
-int num_nodes = map_max_dist * map_max_dist; 
-int robot_width=6; //odd number 
+int rows = 249; // cm
+int cols = 245; // cm
+int num_nodes = rows * cols; 
+int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
 ros::Publisher marker_pub;
 ros::Publisher nodes_pub;
+ros::Subscriber grid_vec;
+
+std::vector<float> data_grid;
+
+bool has_data = false;
 
 
 void nodes_generator()
@@ -32,41 +40,40 @@ void nodes_generator()
 	int j=0;
 	int k=0;
 
-	for(i=0; i < map_max_dist; i=i+(int)round(map_max_dist/sqrt(num_nodes)))
+	for(i=0; i < rows; i=i+(int)round(rows/sqrt(num_nodes)))
 	{
-		for(j=0; j < map_max_dist; j=j+(int)round(map_max_dist/sqrt(num_nodes)))
+		for(j=0; j < cols; j=j+(int)round(cols/sqrt(num_nodes)))
 		{
 			node_vec[k].x = i;
 			node_vec[k].y = j;
 			node_vec[k].weight = 0;
-			node_vec[k].seen = 0;
+			node_vec[k].observed = 0;
 			k++;
 		}
 	}	
+
+}
+
+void read_grid_vect(const std_msgs::Float32MultiArray::ConstPtr &msg)
+{
+	if(has_data) return;
+
+	data_grid = msg->data;
+	has_data =true;
 }
 
 std::vector< std::vector<node> > read_matrix()
 {
-	std::vector< std::vector<node> > matrix(map_max_dist, std::vector<node>(map_max_dist));
+	std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols));
 
-	//TEST
-	int i=0;
 
-	for(i=0; i<map_max_dist; i++)
+	for(int i=0; i<(rows); i++)
 	{
-		matrix[i][0].weight = 100;
-		matrix[i][1].weight = 75;
-		matrix[i][map_max_dist-2].weight = 75;
-		matrix[i][map_max_dist-1].weight = 100;
-	}
-	for(i=0; i<map_max_dist; i++)
-	{
-		matrix[0][i].weight = 100;
-		if(matrix[1][i].weight != 100) matrix[1][i].weight = 75;
-		matrix[map_max_dist-1][i].weight = 100;
-		if(matrix[map_max_dist-2][i].weight != 100) matrix[map_max_dist-2][i].weight = 75;
-	}
-	//
+        for(int j=0; j<(cols);j++)
+        {
+            matrix[i][j].weight = (int)data_grid[((rows*i -1)+j)];
+        } 
+    }
 
 
  	return matrix;
@@ -84,12 +91,14 @@ int detect_walls(int x_pos, int y_pos, std::vector< std::vector<node> > matrix)
 	{
 		for(j=y_pos; j<(y_pos+(robot_radius+1)); j++)
 		{
-			if(matrix[i][j].weight == 100) return -1;
+			if(i<0 || j<0 || i==rows || j==cols) return -2;
+			if(matrix[i][j].weight == 100) return -2;
 			sum = sum + matrix[i][j].weight;
 		}
 		for(j=y_pos-1; j>(y_pos-(robot_radius+1)); j--)
 		{
-			if(matrix[i][j].weight == 100) return -1;
+			if(i<0 || j<0 || i==rows || j==cols) return -2;
+			if(matrix[i][j].weight == 100) return -2;
 			sum = sum + matrix[i][j].weight;
 		}
 	}
@@ -97,12 +106,14 @@ int detect_walls(int x_pos, int y_pos, std::vector< std::vector<node> > matrix)
 	{
 		for(j=y_pos; j<(y_pos+(robot_radius+1)); j++)
 		{
-			if(matrix[i][j].weight == 100) return -1;
+			if(i<0 || j<0 || i==rows || j==cols) return -2;
+			if(matrix[i][j].weight == 100) return -2;
 			sum = sum + matrix[i][j].weight;
 		}
 		for(j=y_pos-1; j>(y_pos-(robot_radius+1)); j--)
 		{
-			if(matrix[i][j].weight == 100) return -1;
+			if(i<0 || j<0 || i==rows || j==cols) return -2;
+			if(matrix[i][j].weight == 100) return -2;
 			sum = sum + matrix[i][j].weight;
 		}
 	}
@@ -121,48 +132,72 @@ void update_nodes()
 	int k=0;
 	int sum =0;
 	int erasenum = 0;
-	std::vector< std::vector<node> > matrix(map_max_dist, std::vector<node>(map_max_dist)); 
+	std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols)); 
 
 	matrix = read_matrix();
 
 	int flag=0;
 
+
 	for(k=0; k<node_vec.size(); k++)
 	{
+		// std::cout << "x =  " << node_vec[k].x << "y =  " << node_vec[k].y  << std::endl;
 		sum = detect_walls(node_vec[k].x, node_vec[k].y	, matrix);
 
-		if( sum == -1 )
+
+		if( sum == -2 )
 		{	
 			erase_node(k);
+
+			// std::cout << "Node Vec size = " << node_vec.size() << std::endl;
 			k=k-1;
 		}else
 		{
 			node_vec[k].weight = sum;
 		}		 
 	}
+
 }
 
-// void show_nodes()
-// {  	
-// 	geometry_msgs::Point aux_msg;
-// 	geometry_msgs::PointStamped marker_msg;
-// 	int i =0;
+void show_nodes()
+{  	
+	visualization_msgs::Marker marker;
+	visualization_msgs::MarkerArray marker_vec;
 
+	int i =0;
 
-// 	for(i=0; i<node_vec.size(); i++)
-// 	{
-// 		aux_msg.x=node_vec[i].x;
-// 		aux_msg.y=node_vec[i].y;
-// 		aux_msg.z=0.0;
-// 	}
+	//Marker 
+	marker.header.frame_id = "/map";
+	marker.ns = "valid_nodes";
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+	marker.pose.orientation.x = 0.0;
+	marker.pose.orientation.y = 0.0;
+	marker.pose.orientation.z = 0.0;
+	marker.pose.orientation.w = 1.0;
+	marker.scale.x = 0.4;
+	marker.scale.y = 0.4;
+	marker.scale.z = 0.0;
+	marker.color.a = 1.0; // Don't forget to set the alpha!
+	marker.color.r = 0.0;
+	marker.color.g = 1.0;
+	marker.color.b = 1.0;
 
-// 	marker_msg.point = aux_msg;
-// 	marker_msg.header.frame_id = "camera_link";
-// 	marker_msg.header.stamp = ros::Time::now();
+   	marker.pose.position.z = 0.0;
 
-//   	//Message publish
-//   	marker_pub.publish(marker_msg);
-// }
+	for(i=0; i<node_vec.size(); i++)
+	{
+		marker.header.stamp = ros::Time();
+		marker.id = i;
+		marker.pose.position.x = node_vec[i].y;
+    	marker.pose.position.y = node_vec[i].x;
+
+		marker_vec.markers.push_back(marker);
+	}
+
+	marker_pub.publish(marker_vec);  
+
+}
 
 // void publish_nodes()
 // {
@@ -179,36 +214,44 @@ void update_nodes()
 
 
 int main(int argc, char **argv)
-{
-	//ros init
+{	
 	ros::init(argc, argv, "node_generator");
 	ros::NodeHandle n;
 
 	//Topics subscribed 
-  	// marker_pub = n.advertise<geometry_msgs::PointStamped>("geometry_msgs/PointStamped", 100);
-  	// nodes_pub = n.advertise<node_vec>("exploration/nodes", 100);
+  	marker_pub = n.advertise<visualization_msgs::MarkerArray>( "visualization_msgs/MarkerArray", 0);
+	grid_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_generator_node/test_2",100, read_grid_vect);
 
+  	int counter=0;
+  	bool update_done = false;
 
-    nodes_generator();   	
-    update_nodes();
-    // show_nodes();
+    nodes_generator();  
+
+    
     // publish_nodes();
 
-    // double control_frequency = 10.0;
 
-    // ros::Rate loop_rate(control_frequency);
+    double control_frequency = 10.0;
 
-    // while(ros::ok())
-    // {
-    // 	show_nodes();
-    // 	ros::spinOnce();
-    // 	loop_rate.sleep();
-    // }
-    
-    
+    ros::Rate loop_rate(control_frequency);
 
-    int i =0;
-	for(i=0; i<node_vec.size(); i++)	std::cout << "New_Node["<< i << "] : x=" << node_vec[i].x << " y= " << node_vec[i].y << " weight= " << node_vec[i].weight << "\n";
+    while(ros::ok())
+    {
+    	if(has_data && !update_done) 
+    	{
+    		update_nodes();
+    		update_done = true;
+    		show_nodes();
+    	}
+
+    	counter++;
+     	ros::spinOnce();
+    	loop_rate.sleep();
+    }
+      
+
+ //    int i =0;
+	// for(i=0; i<node_vec.size(); i++)	std::cout << "New_Node["<< i << "] : x=" << node_vec[i].x << " y= " << node_vec[i].y << " weight= " << node_vec[i].weight << "\n";
 
 
     return 0;
@@ -217,6 +260,29 @@ int main(int argc, char **argv)
 
 
 //rand() % map_max_dist;   //random number between 0 and map_max_dist
+
+
+
+
+
+	//TEST
+	// int i=0;
+
+	// for(i=0; i<map_max_dist; i++)
+	// {
+	// 	matrix[i][0].weight = 100;
+	// 	matrix[i][1].weight = 75;
+	// 	matrix[i][map_max_dist-2].weight = 75;
+	// 	matrix[i][map_max_dist-1].weight = 100;
+	// }
+	// for(i=0; i<map_max_dist; i++)
+	// {
+	// 	matrix[0][i].weight = 100;
+	// 	if(matrix[1][i].weight != 100) matrix[1][i].weight = 75;
+	// 	matrix[map_max_dist-1][i].weight = 100;
+	// 	if(matrix[map_max_dist-2][i].weight != 100) matrix[map_max_dist-2][i].weight = 75;
+	// }
+	//
 
 
 // int detect_y_walls(int x_pos)
