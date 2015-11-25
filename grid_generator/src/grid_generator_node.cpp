@@ -4,6 +4,7 @@
 #include "std_msgs/Int64.h"
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float64.h"
+#include "std_msgs/Float32MultiArray.h"
 #include "ras_arduino_msgs/PWM.h"
 #include "ras_arduino_msgs/Encoders.h"
 #include "geometry_msgs/Twist.h"
@@ -42,6 +43,7 @@ public:
     // };
     std::vector< std::vector<grid_generator::Grid_map_struct> > matrix_a;
     std::vector<grid_generator::Grid_map_struct> grid_map_send;
+    std_msgs::Float32MultiArray vec_data;
     nav_msgs::OccupancyGrid grid_;
 
     ros::NodeHandle n;
@@ -49,6 +51,7 @@ public:
     ros::Publisher map_pub_;
     ros::Publisher grid_map_pub;
     ros::Publisher map_query_pub;
+    ros::Publisher vec_map_pub;
 
     ros::Subscriber encoders_sub_;
     ros::Subscriber grid_update_request_sub_;
@@ -58,8 +61,8 @@ public:
     {
         n = ros::NodeHandle("~");
         //The rows and cols needs to be one bigger than the length of the outer walls
-        rows=250; 
-        col=250;
+        rows=249; 
+        col=245;
         grid_update_query=1;
 
     
@@ -72,6 +75,7 @@ public:
         }
  
         grid_map_pub = n.advertise<nav_msgs::OccupancyGrid>("test", 100);
+        vec_map_pub = n.advertise<std_msgs::Float32MultiArray>("test_2", 100);
         map_query_pub = n.advertise<std_msgs::Bool>("/map_reader/query", 100);
         
         map_subscriber = n.subscribe<localization::Map_message>("/map_reader/map", 1, &GridGeneratorNode::read_map_2,this);
@@ -114,7 +118,7 @@ void read_map_request_function(){
 
 void matrix_to_vector_convert_function(){
     grid_generator::Grid_map_struct data;
-
+    
     grid_.data.resize(rows*col);
 
     grid_.info.origin.position.x =0.0;
@@ -125,13 +129,14 @@ void matrix_to_vector_convert_function(){
     grid_.info.height = rows;
     grid_.info.resolution = 1.0;
 
-    for(int i=0; i<rows; i++){
-        for(int j=0; j<col;j++){
+    for(int j=0; j<col;j++){
+        for(int i=0; i<rows; i++){
             data.x_pos=matrix_a[i][j].x_pos;
             data.y_pos=matrix_a[i][j].y_pos; 
             data.weight= matrix_a[i][j].weight;
             data.observed =matrix_a[i][j].observed;
             grid_.data[((col*i)+j)] = matrix_a[i][j].weight;
+            vec_data.data[((col*i)+j)] = matrix_a[i][j].weight;
             // if(i==0){
             //     std::cout << "vector: "<< ((col*i)+j)<< " , grid: "<<(int)grid_.data[((col*i)+j)]<<" , matrix:" << matrix_a[i][j].weight<<  std::endl;
             // }
@@ -166,6 +171,7 @@ void send_grid_function(){
         grid_.header.frame_id = "/map";
         grid_.header.stamp = ros::Time::now();
         grid_map_pub.publish(grid_);
+        vec_map_pub.publish(vec_data);
         grid_update_query=0;
     //}
 }
@@ -287,14 +293,21 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
 //             }
 //         }
 //     }  
-// }
+
 
 // void add_cost_weight(int x, int y){
 //     for (int n=1;n<=3;n++){
+//         if(((x-n)>=0) || ((x+n)
 //         for(int i=(x-n);i<=(x+n);i++){
 //             for(int j=(x-n);j<=(x+n);j++){
 
-//                 if(matrix_a[i][j].weight==100)
+//                 if(matrix_a[i][j].weight!=100){
+
+
+
+
+//                 }
+
 
 
 //             }
