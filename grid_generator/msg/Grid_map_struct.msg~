@@ -1,4 +1,4 @@
-int64 x
-int64 y
-int64 weight
-int64 seen
+int32 x_pos
+int32 y_pos
+int32 weight
+int32 observed

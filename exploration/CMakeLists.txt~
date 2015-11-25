@@ -9,7 +9,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
-  geometry_msgs
+  visualization_msgs
+  nav_msgs
+  grid_generator
 )
 
 ## System dependencies are found with CMake's conventions
@@ -48,8 +50,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   Nodes_map_struct.msg
-   Nodes_map.msg
+   nodes.msg
+   nodes_vec.msg
  )
 
 ## Generate services in the 'srv' folder
