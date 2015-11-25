@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  geometry_msgs
   message_generation
 )
 
@@ -14,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    Grid_map_struct.msg
    Grid_map.msg
+   OccupancyGrid.msg
+   VoxelGrid.msg
    
  )
 
@@ -21,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
  generate_messages(
    DEPENDENCIES
    std_msgs  # Or other packages containing msgs
+   geometry_msgs
  )
  
 
@@ -38,4 +42,10 @@ add_executable(grid_generator_node src/grid_generator_node.cpp)
 target_link_libraries(grid_generator_node  ${catkin_LIBRARIES})
 
 add_dependencies(grid_generator_node  grid_generator_msgs_generate_messages_cpp)
+
+
+add_executable(update_request src/update_request.cpp)
+target_link_libraries(update_request ${catkin_LIBRARIES})
+
+add_dependencies(update_request  update_request_msgs_generate_messages_cpp)
 
