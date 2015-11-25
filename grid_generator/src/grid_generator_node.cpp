@@ -61,8 +61,8 @@ public:
     {
         n = ros::NodeHandle("~");
         //The rows and cols needs to be one bigger than the length of the outer walls
-        rows=250; 
-        col=250;
+        rows=249;   //rows=249; 
+        col=245;    //col=245;
         grid_update_query=1;
 
     
@@ -117,7 +117,7 @@ void map_request_function(){
 
 
 void matrix_to_vector_convert_function(){
-    grid_generator::Grid_map_struct data;
+
     
     grid_.data.resize(rows*col);
     vec_data.data.resize(rows*col);
@@ -125,46 +125,42 @@ void matrix_to_vector_convert_function(){
     grid_.info.origin.position.y =0.0,
     grid_.info.origin.position.z =0.0;
     grid_.info.origin.orientation.w = 1.0;
-    grid_.info.width = col;
-    grid_.info.height = rows;
+    grid_.info.width = rows;
+    grid_.info.height = col;
     grid_.info.resolution = 1.0;
 
     
-    for(int i=0; i<rows; i++){  //rows=249; 
-        
-        for(int j=0; j<col;j++){    //col=245;
-            data.x_pos=matrix_a[i][j].x_pos;
-            data.y_pos=matrix_a[i][j].y_pos; 
-            data.weight= matrix_a[i][j].weight;
-            data.observed =matrix_a[i][j].observed;
-            grid_.data[((col*i)+j)] = matrix_a[j][i].weight;
-           vec_data.data[((col*i)+j)] = matrix_a[j][i].weight;
+    for(int i=0; i<col; i++){  //col=245; 
+        for(int j=0; j<rows;j++){    //rows=249;
+            grid_.data[((rows*i)+j)] = matrix_a[j][i].weight;
+            vec_data.data[((rows*i)+j)] = matrix_a[j][i].weight;
             // if(i==0){
             //     std::cout << "vector: "<< ((col*i)+j)<< " , grid: "<<(int)grid_.data[((col*i)+j)]<<" , matrix:" << matrix_a[i][j].weight<<  std::endl;
             // }
-            grid_map_send.push_back(data);  
         } 
     }
 
-        std::cout << "data:"<<  std::endl;
-        std::cout << "   1:"<<  (int)grid_.data[0]      <<" , "      << matrix_a[0][0].weight<< std::endl; 
-        std::cout << "   2:"<<  (int)grid_.data[1]      <<" , "      << matrix_a[0][1].weight<< std::endl; 
-        std::cout << "   5:"<<  (int)grid_.data[4]      <<" , "      << matrix_a[0][2].weight<< std::endl; 
-        std::cout << "  10:"<<  (int)grid_.data[9]      <<" , "      << matrix_a[0][4].weight<< std::endl; 
-        std::cout << " 240:"<<  (int)grid_.data[239]    <<" , "      << matrix_a[0][239].weight<< std::endl; 
-        std::cout << " 241:"<<  (int)grid_.data[240]    <<" , "      << matrix_a[0][240].weight<< std::endl; 
-        std::cout << " 242:"<<  (int)grid_.data[241]    <<" , "      << matrix_a[0][241].weight<< std::endl; 
-        std::cout << " 243:"<<  (int)grid_.data[242]    <<" , "      << matrix_a[0][242].weight<< std::endl; 
-        std::cout << " 244:"<<  (int)grid_.data[243]    <<" , "      << matrix_a[0][243].weight<< std::endl; 
-        std::cout << " 245:"<<  (int)grid_.data[244]    <<" , "      << matrix_a[0][244].weight<< std::endl; 
-        std::cout << " 246:"<<  (int)grid_.data[245]    <<" , "      << matrix_a[1][0].weight<< std::endl; 
-        std::cout << " 247:"<<  (int)grid_.data[246]    <<" , "      << matrix_a[1][1].weight<< std::endl; 
-
-        std::cout << " 248:"<<  (int)grid_.data[247]    <<" , "      << matrix_a[1][2].weight<< std::endl; 
-        std::cout << " 249:"<<  (int)grid_.data[248]    <<" , "      << matrix_a[1][3].weight<< std::endl; 
-        std::cout << " 250:"<<  (int)grid_.data[249]    <<" , "      << matrix_a[1][4].weight<< std::endl;
-
-        
+        // std::cout << "data:"<<  std::endl;
+        // std::cout << "   1:"<<  (int)grid_.data[0]      <<" , "      << matrix_a[0][0].weight<< std::endl; 
+        // std::cout << "   2:"<<  (int)grid_.data[1]      <<" , "      << matrix_a[1][0].weight<< std::endl; 
+        // std::cout << "   5:"<<  (int)grid_.data[4]      <<" , "      << matrix_a[2][0].weight<< std::endl; 
+        // std::cout << "  10:"<<  (int)grid_.data[9]      <<" , "      << matrix_a[4][0].weight<< std::endl; 
+        // std::cout << " 240:"<<  (int)grid_.data[239]    <<" , "      << matrix_a[239][0].weight<< std::endl; 
+        // std::cout << " 241:"<<  (int)grid_.data[240]    <<" , "      << matrix_a[240][0].weight<< std::endl; 
+        // std::cout << " 242:"<<  (int)grid_.data[241]    <<" , "      << matrix_a[241][0].weight<< std::endl; 
+        // std::cout << " 243:"<<  (int)grid_.data[242]    <<" , "      << matrix_a[242][0].weight<< std::endl; 
+        // std::cout << " 244:"<<  (int)grid_.data[243]    <<" , "      << matrix_a[243][0].weight<< std::endl; 
+        // std::cout << " 245:"<<  (int)grid_.data[244]    <<" , "      << matrix_a[244][0].weight<< std::endl; 
+        // std::cout << " 246:"<<  (int)grid_.data[245]    <<" , "      << matrix_a[245][0].weight<< std::endl; 
+        // std::cout << " 247:"<<  (int)grid_.data[246]    <<" , "      << matrix_a[246][0].weight<< std::endl; 
+        // std::cout << " 248:"<<  (int)grid_.data[247]    <<" , "      << matrix_a[247][0].weight<< std::endl; 
+        // std::cout << " 249:"<<  (int)grid_.data[248]    <<" , "      << matrix_a[248][0].weight<< std::endl;
+        // std::cout << " 250:"<<  (int)grid_.data[249]    <<" , "      << matrix_a[0][1].weight<< std::endl; 
+        // std::cout << " 251:"<<  (int)grid_.data[250]    <<" , "      << matrix_a[1][1].weight<< std::endl; 
+        // std::cout << " 252:"<<  (int)grid_.data[251]    <<" , "      << matrix_a[2][1].weight<< std::endl; 
+        // std::cout << " 498:"<<  (int)grid_.data[497]    <<" , "      << matrix_a[0][2].weight<< std::endl;
+        // std::cout << " 747:"<<  (int)grid_.data[746]    <<" , "      << matrix_a[0][3].weight<< std::endl;
+        // std::cout << " 996:"<<  (int)grid_.data[995]    <<" , "      << matrix_a[0][4].weight<< std::endl;
 }
 
 void send_grid_function(){
@@ -183,7 +179,7 @@ void send_grid_function(){
         grid_.header.frame_id = "/map";
         grid_.header.stamp = ros::Time::now();
         grid_map_pub.publish(grid_);
-        vec_map_pub.publish(vec_data);
+       // vec_map_pub.publish(vec_data);
         grid_update_query=0;
     //}
 }
@@ -283,49 +279,108 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
                 //std::cout << "("<<xSamePos<<", "<< yTemp <<")" << std::endl;
             }
         }
+         add_cost_values_function();
          matrix_to_vector_convert_function();
     }  
     //std::cout << "data:"<< std::endl;
 }
 
-// void add_cost_values_function(){
-//     for(int i=0; i<rows; i++){
-//         for(int j=0; j<col;j++){
-//             //matrix_a[i][j].x_pos=i;
-//             //matrix_a[i][j].y_pos=j;
-//             //matrix_a[i][j].weight = -1;
-//             //matrix_a[i][j].observed = 0;
-//             if (matrix_a[i][j].weight==100){
-//                 add_cost_weight(i,j);
+void add_cost_values_function(){
+    for(int i=0; i<rows; i++){
+        for(int j=0; j<col;j++){
+            //matrix_a[i][j].x_pos=i;
+            //matrix_a[i][j].y_pos=j;
+            //matrix_a[i][j].weight = -1;
+            //matrix_a[i][j].observed = 0;
+            if (matrix_a[i][j].weight==100){
+                add_cost_weight(i,j);
+                //std::cout << "Done for wall at point (x,y)=("<< i << ","<< j <<")" <<std::endl;
                 
-//                 }
+                }
 
 
 
-//             }
-//         }
-//     }  
+            }
+        }
+    }  
 
+void add_cost_weight(int x, int y){
+    //std::vector<int> table_vec = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
+    int table_vec[] = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
+    for (int n=1;n<=14;n++){
+        
+         if((x-n)>0){
+            if((x+n)<rows){
+                if((y-n)>0){
+                    if((y+n)<col){
+                        for(int i=(x-n);i<=(x+n);i++){ //rows
+                            //std::cout << "x: "<< i << ", n: "<< n<<", (y-n): "<< (y-n) << ", (y+n): "<< (y+n) <<std::endl;
 
-// void add_cost_weight(int x, int y){
-//     for (int n=1;n<=3;n++){
-//         if(((x-n)>=0) || ((x+n)
-//         for(int i=(x-n);i<=(x+n);i++){
-//             for(int j=(x-n);j<=(x+n);j++){
+                            for(int j=(y-n);j<=(y+n);j++){ //cols
+                                //std::cout << "x: "<< i << ", y: "<< j<<", weight: "<< matrix_a[i][j].weight << std::endl;
+                                
+                                if(matrix_a[i][j].weight!=100){
+                //                         std::cout << "____________"<< std::endl;
+                                         //std::cout << "x: "<< i << ", y: "<< j<< std::endl;
+                                    if( matrix_a[i][j].weight<table_vec[n]){
+                                        matrix_a[i][j].weight=table_vec[n];
 
-//                 if(matrix_a[i][j].weight!=100){
+                // //                     }
+                                    
+                                    }
+                                }
+                                //std::cout << "x.: "<< i << ", y.: "<< j<<", weight: "<< matrix_a[i][j].weight << std::endl;        
+                                
+                            }
+                            //std::cout << "____________"<< std::endl;
+                        }
+                        //std::cout << "++++++++++"<< std::endl;
+                    }
+                    //std::cout << "-----------"<< std::endl;
+                }
+                //std::cout << "************"<< std::endl;
+             }
+         } 
 
+        if(x==0){
+            //do y
+            if(matrix_a[(x+n)][y].weight!=100){
+                if( matrix_a[(x+n)][y].weight<table_vec[n]){
+                    matrix_a[(x+n)][y].weight=table_vec[n];
+                }
+            }
+            //std::cout << "____________"<< std::endl;
+        } 
 
-
-
-//                 }
-
-
-
-//             }
-//         }
-//     }
-// }
+        if(x==(rows-1)){
+            if(matrix_a[x-n][y].weight!=100){
+                if( matrix_a[x-n][(y)].weight<table_vec[n]){
+                    matrix_a[x-n][(y)].weight=table_vec[n];
+                    //std::cout << "++++++++++"<< std::endl;
+                }
+            }
+        } 
+        
+        if(y==0){
+            if(matrix_a[x][(y+n)].weight!=100){
+                if( matrix_a[x][(y+n)].weight<table_vec[n]){
+                     matrix_a[x][(y+n)].weight=table_vec[n];
+                    //std::cout << "-----------"<<  std::endl;
+                }
+            }
+        } 
+        if(y==(col-1)){
+            //do y
+            if(matrix_a[x][(y-n)].weight!=100){
+                if( matrix_a[x][(y-n)].weight<table_vec[n]){
+                     matrix_a[x][(y-n)].weight=table_vec[n];
+                    //std::cout << "************"<< std::endl;
+                }
+            }
+            
+        }   
+    }
+}
 
 private:
  int rows;
