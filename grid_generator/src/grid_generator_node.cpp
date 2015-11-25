@@ -61,8 +61,8 @@ public:
     {
         n = ros::NodeHandle("~");
         //The rows and cols needs to be one bigger than the length of the outer walls
-        rows=249; 
-        col=245;
+        rows=250; 
+        col=250;
         grid_update_query=1;
 
     
@@ -108,7 +108,7 @@ void matrix_function()
 
     //std::cout << "data:"<< matrix_a[5][7].weight << ", "<<  matrix_a[5][7].observed<<std::endl;
     }
-void read_map_request_function(){
+void map_request_function(){
     std_msgs::Bool bool_msg;
     bool_msg.data = true;
     map_query_pub.publish(bool_msg);
@@ -120,7 +120,7 @@ void matrix_to_vector_convert_function(){
     grid_generator::Grid_map_struct data;
     
     grid_.data.resize(rows*col);
-
+    vec_data.data.resize(rows*col);
     grid_.info.origin.position.x =0.0;
     grid_.info.origin.position.y =0.0,
     grid_.info.origin.position.z =0.0;
@@ -129,14 +129,16 @@ void matrix_to_vector_convert_function(){
     grid_.info.height = rows;
     grid_.info.resolution = 1.0;
 
-    for(int j=0; j<col;j++){
-        for(int i=0; i<rows; i++){
+    
+    for(int i=0; i<rows; i++){  //rows=249; 
+        
+        for(int j=0; j<col;j++){    //col=245;
             data.x_pos=matrix_a[i][j].x_pos;
             data.y_pos=matrix_a[i][j].y_pos; 
             data.weight= matrix_a[i][j].weight;
             data.observed =matrix_a[i][j].observed;
-            grid_.data[((col*i)+j)] = matrix_a[i][j].weight;
-            vec_data.data[((col*i)+j)] = matrix_a[i][j].weight;
+            grid_.data[((col*i)+j)] = matrix_a[j][i].weight;
+           vec_data.data[((col*i)+j)] = matrix_a[j][i].weight;
             // if(i==0){
             //     std::cout << "vector: "<< ((col*i)+j)<< " , grid: "<<(int)grid_.data[((col*i)+j)]<<" , matrix:" << matrix_a[i][j].weight<<  std::endl;
             // }
@@ -144,13 +146,23 @@ void matrix_to_vector_convert_function(){
         } 
     }
 
-    // std::cout << "data:"<<  (int)grid_.data[0]      << " nummer" <<  std::endl;
-    //     std::cout << "   1:"<<  (int)grid_.data[0]      <<" , "      << matrix_a[0][0].weight<< std::endl; 
-    //     std::cout << "   2:"<<  (int)grid_.data[1]      <<" , "      << matrix_a[0][1].weight<< std::endl; 
-    //     std::cout << " 499:"<<  (int)grid_.data[499]    <<" , "      << matrix_a[0][499].weight<< std::endl; 
-    //     std::cout << " 500:"<<  grid_.data[500]    <<" , "      << matrix_a[1][0].weight<< std::endl; 
-    //     std::cout << " 501:"<<  grid_.data[501]    <<" , "      << matrix_a[1][1].weight<< std::endl; 
+        std::cout << "data:"<<  std::endl;
+        std::cout << "   1:"<<  (int)grid_.data[0]      <<" , "      << matrix_a[0][0].weight<< std::endl; 
+        std::cout << "   2:"<<  (int)grid_.data[1]      <<" , "      << matrix_a[0][1].weight<< std::endl; 
+        std::cout << "   5:"<<  (int)grid_.data[4]      <<" , "      << matrix_a[0][2].weight<< std::endl; 
+        std::cout << "  10:"<<  (int)grid_.data[9]      <<" , "      << matrix_a[0][4].weight<< std::endl; 
+        std::cout << " 240:"<<  (int)grid_.data[239]    <<" , "      << matrix_a[0][239].weight<< std::endl; 
+        std::cout << " 241:"<<  (int)grid_.data[240]    <<" , "      << matrix_a[0][240].weight<< std::endl; 
+        std::cout << " 242:"<<  (int)grid_.data[241]    <<" , "      << matrix_a[0][241].weight<< std::endl; 
+        std::cout << " 243:"<<  (int)grid_.data[242]    <<" , "      << matrix_a[0][242].weight<< std::endl; 
+        std::cout << " 244:"<<  (int)grid_.data[243]    <<" , "      << matrix_a[0][243].weight<< std::endl; 
+        std::cout << " 245:"<<  (int)grid_.data[244]    <<" , "      << matrix_a[0][244].weight<< std::endl; 
+        std::cout << " 246:"<<  (int)grid_.data[245]    <<" , "      << matrix_a[1][0].weight<< std::endl; 
+        std::cout << " 247:"<<  (int)grid_.data[246]    <<" , "      << matrix_a[1][1].weight<< std::endl; 
 
+        std::cout << " 248:"<<  (int)grid_.data[247]    <<" , "      << matrix_a[1][2].weight<< std::endl; 
+        std::cout << " 249:"<<  (int)grid_.data[248]    <<" , "      << matrix_a[1][3].weight<< std::endl; 
+        std::cout << " 250:"<<  (int)grid_.data[249]    <<" , "      << matrix_a[1][4].weight<< std::endl;
 
         
 }
@@ -357,8 +369,8 @@ int main(int argc, char **argv)
     grid_generator_node_2.matrix_function();
     while(grid_generator_node_2.n.ok())
     {
-        if (counter == 2){
-            grid_generator_node_2.read_map_request_function();
+        if (counter == 5){
+            grid_generator_node_2.map_request_function();
         }
         // if ((grid_generator_node_2.update_matrix_function()==1)){
             
