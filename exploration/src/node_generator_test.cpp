@@ -18,7 +18,7 @@ struct node
 //Global 
 int rows = 249; // cm
 int cols = 245; // cm
-int num_nodes = 420; 
+int num_nodes = 600; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
@@ -129,10 +129,15 @@ void update_nodes()
 	int sum =0;
 	int erasenum = 0;
 	std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols)); 
+	int search_radius=3;
+	int filter_times = 20;
+	bool move = true;
 
-	
 	matrix = read_matrix();
 
+	int counter=0;
+
+	// Valid Nodes and Costs
 	for(k=0; k<node_vec.size(); k++)
 	{
 		sum = detect_walls(node_vec[k].x, node_vec[k].y	, matrix);
@@ -147,6 +152,65 @@ void update_nodes()
 			node_vec[k].weight = sum;
 		}		 
 	}
+
+	// Looking for a local minimum
+	// counter<filter_times
+	// while(move)
+	// {
+	// 	move = false;
+	// 	counter++;
+	// 	for(k=0; k<node_vec.size(); k++)
+	// 	{
+	// 		//check right
+	// 		if(node_vec[k].x+search_radius < rows)
+	// 		{
+	// 			sum = detect_walls(node_vec[k].x+search_radius, node_vec[k].y	, matrix);
+	// 			if(sum < node_vec[k].weight && sum!=-2)
+	// 			{
+	// 				node_vec[k].weight = sum;
+	// 				node_vec[k].x = node_vec[k].x+search_radius;
+	// 				move=true;
+	// 			}
+	// 		}
+
+	// 		//check down
+	// 		if(node_vec[k].y-search_radius > 0)
+	// 		{
+	// 			sum = detect_walls(node_vec[k].x, node_vec[k].y-search_radius	, matrix);
+	// 			if(sum < node_vec[k].weight && sum!=-2)
+	// 			{
+	// 				node_vec[k].weight = sum;
+	// 				node_vec[k].y = node_vec[k].y-search_radius;
+	// 				move=true;
+	// 			}
+	// 		}
+
+	// 		//check left
+	// 		if(node_vec[k].x-search_radius > 0)
+	// 		{
+	// 			sum = detect_walls(node_vec[k].x-search_radius, node_vec[k].y	, matrix);
+	// 			if(sum < node_vec[k].weight && sum!=-2)
+	// 			{
+	// 				node_vec[k].weight = sum;
+	// 				node_vec[k].x = node_vec[k].x-search_radius;
+	// 				move=true;
+	// 			}
+	// 		}
+			
+	// 		//check up
+	// 		if(node_vec[k].y+search_radius < cols)
+	// 		{
+	// 			sum = detect_walls(node_vec[k].x, node_vec[k].y+search_radius	, matrix);
+	// 			if(sum < node_vec[k].weight && sum!=-2)
+	// 			{
+	// 				node_vec[k].weight = sum;
+	// 				node_vec[k].y = node_vec[k].y+search_radius;
+	// 				move=true;
+	// 			}
+	// 		}
+			
+	// 	}
+	// }
 
 }
 
@@ -214,12 +278,12 @@ int main(int argc, char **argv)
 	grid_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_generator_node/test_2",100, read_grid_vect);
 
   	int counter=0;
-  	bool update_done = false;
-  	double control_frequency = 10.0;
+  	bool update_done = false;  	
+    double control_frequency = 10.0;
     ros::Rate loop_rate(control_frequency);
 
 
-    nodes_generator();  
+    nodes_generator(); 
 
     while(ros::ok())
     {
@@ -235,6 +299,44 @@ int main(int argc, char **argv)
      	ros::spinOnce();
     	loop_rate.sleep();
     }
-
+      
     return 0;
 }
+
+
+// void adapt_nodes_positions()
+// {
+// 	int i=0;
+// 	int j=0;
+// 	bool free_radius=false;
+// 	int move_step=1;
+
+// 	matrix = read_matrix(); // See where to do
+
+// 	for(k=0; k<num_nodes; k++)
+// 	{
+// 		while(!free_radius)
+// 		{
+// 			if(detect_walls(node_vec[k].x, node_vec[k].x) == 2 || detect_x_walls(node_vec[k].y)==2)
+// 			{	
+// 				erase_node(k);
+// 				break;
+// 			}
+// 			if(detect_y_walls(node_vec[k].x)!=0)
+// 			{
+// 				if(detect_y_walls(node_vec[k].x)==-1) node_vec[k].x = node_vec[k].x + move_step;
+// 				if(detect_y_walls(node_vec[k].x)==1) node_vec[k].x = node_vec[k].x - move_step;				
+
+// 			}
+// 			if(detect_x_walls(node_vec[k].y)!=0)
+// 			{
+// 				if(detect_x_walls(node_vec[k].y)==-1) node_vec[k].y = node_vec[k].y + move_step;
+// 				if(detect_x_walls(node_vec[k].y)==1) node_vec[k].y = node_vec[k].y - move_step;
+// 			}
+// 			if(detect_x_walls(node_vec[k].y)==0 && detect_y_walls(node_vec[k].x)!=0)
+// 			{
+// 				free_radius = true;
+// 			}
+// 		}
+// 	}	
+// }

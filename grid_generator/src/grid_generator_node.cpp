@@ -101,7 +101,7 @@ void matrix_function()
         for(int j=0; j<col;j++){
             matrix_a[i][j].x_pos=i;
             matrix_a[i][j].y_pos=j;
-            matrix_a[i][j].weight = -1;
+            matrix_a[i][j].weight = 0;
             matrix_a[i][j].observed = 0;
         }
     }
@@ -179,7 +179,7 @@ void send_grid_function(){
         grid_.header.frame_id = "/map";
         grid_.header.stamp = ros::Time::now();
         grid_map_pub.publish(grid_);
-       // vec_map_pub.publish(vec_data);
+        vec_map_pub.publish(vec_data);
         grid_update_query=0;
     //}
 }

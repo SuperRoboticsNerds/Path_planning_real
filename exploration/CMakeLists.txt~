@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   visualization_msgs
   nav_msgs
-  grid_generator
 )
 
 ## System dependencies are found with CMake's conventions
@@ -136,6 +135,9 @@ include_directories(
 
 add_executable(node_generator  src/node_generator.cpp)
 target_link_libraries(node_generator  ${catkin_LIBRARIES})
+
+add_executable(node_generator_test  src/node_generator_test.cpp)
+target_link_libraries(node_generator_test  ${catkin_LIBRARIES})
 
 
 add_executable(exploration  src/exploration.cpp)
