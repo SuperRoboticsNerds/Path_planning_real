@@ -136,6 +136,9 @@ include_directories(
 add_executable(node_generator  src/node_generator.cpp)
 target_link_libraries(node_generator  ${catkin_LIBRARIES})
 
+add_executable(node_generator_test  src/node_generator_test.cpp)
+target_link_libraries(node_generator_test  ${catkin_LIBRARIES})
+
 
 add_executable(exploration  src/exploration.cpp)
 target_link_libraries(exploration  ${catkin_LIBRARIES})
