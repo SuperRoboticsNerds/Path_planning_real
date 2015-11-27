@@ -449,7 +449,7 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
         int wall_cost_vec[] = {99,95,70,50,35,20,10};
     }
     int cost_steps = 9/steps;
-    int object_radius = 2;
+    int object_radius = 1;
     geometry_msgs::Point point_out;
     point_out=msg->point;
 
