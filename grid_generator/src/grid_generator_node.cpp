@@ -72,15 +72,15 @@ public:
         grid_update_query=1;
         matrix_created=0;
         steps=1;
-        rows=300; 
-        col=300;
+        // rows=300; 
+        // col=300;
         
-        matrix_a.resize(rows);
-        for(int i = 0 ; i <rows ; i=i+steps)
-        {
-            //Grow Columns by n
-            matrix_a[i].resize(col);
-        }
+        // matrix_a.resize(rows);
+        // for(int i = 0 ; i <rows ; i=i+steps)
+        // {
+        //     //Grow Columns by n
+        //     matrix_a[i].resize(col);
+        // }
  
         grid_map_pub = n.advertise<nav_msgs::OccupancyGrid>("test", 100);
         vec_map_pub = n.advertise<std_msgs::Float32MultiArray>("test_2", 100);
