@@ -51,12 +51,15 @@ public:
     std::vector< std::vector<grid_generator::Grid_map_struct> > matrix_a;
     std::vector<grid_generator::Grid_map_struct> grid_map_send;
     std_msgs::Float32MultiArray vec_data;
-    nav_msgs::OccupancyGrid grid_;
+    nav_msgs::OccupancyGrid grid_cost;
+    nav_msgs::OccupancyGrid grid_obs;
+
 
     ros::NodeHandle n;
 
     ros::Publisher map_pub_;
-    ros::Publisher grid_map_pub;
+    ros::Publisher grid_cost_map_pub;
+    ros::Publisher grid_obs_map_pub;
     ros::Publisher map_query_pub;
     ros::Publisher vec_map_pub;
 
@@ -71,26 +74,27 @@ public:
     
         grid_update_query=1;
         matrix_created=0;
-        steps=1;
+        steps=2;
         // rows=300; 
         // col=300;
         
         // matrix_a.resize(rows);
-        // for(int i = 0 ; i <rows ; i=i+steps)
+        // for(int i = 0 ; i <rows ; i=i+1)
         // {
         //     //Grow Columns by n
         //     matrix_a[i].resize(col);
         // }
  
-        grid_map_pub = n.advertise<nav_msgs::OccupancyGrid>("test", 100);
-        vec_map_pub = n.advertise<std_msgs::Float32MultiArray>("test_2", 100);
+        grid_cost_map_pub = n.advertise<nav_msgs::OccupancyGrid>("/grid_map/cost_to_rviz", 100);
+        grid_obs_map_pub = n.advertise<nav_msgs::OccupancyGrid>("/grid_map/obs_to_rviz", 100);
+        vec_map_pub = n.advertise<std_msgs::Float32MultiArray>("/grid_map/to_nodes", 100);
         map_query_pub = n.advertise<std_msgs::Bool>("/map_reader/query", 100);
         
         map_subscriber = n.subscribe<localization::Map_message>("/map_reader/map", 1, &GridGeneratorNode::read_map_2,this);
         object_pos_sub_ = n.subscribe<geometry_msgs::PointStamped>("/object_pos",1,&GridGeneratorNode::add_object_to_grid,this);
         grid_update_request_sub_ = n.subscribe<std_msgs::Int32>("/grid_generator/update_query",1,&GridGeneratorNode::read_map_request_function,this);
         
-        //grid_map_pub = n.advertise<std::vector< std::vector<struct position_node> >("test",1);
+        //grid_cost_map_pub = n.advertise<std::vector< std::vector<struct position_node> >("test",1);
         //twist_sub_ = n.subscribe<geometry_msgs::Twist>("/motor_controller/twist",1,&MotorcontrollerNode::twist_function,this);
         //pwm_pub_ = n.advertise<ras_arduino_msgs::PWM>("/kobuki/pwm", 1000);
     }
@@ -105,22 +109,24 @@ public:
 
 void matrix_function()
     {
-
+    //std::cout << "matrix_function start: "  << std::endl;
     rows=length_x_wall+1;   //rows=249; 
     col=length_y_wall+1;    //col=245;
-    //std::cout << "rows: "<< rows << ", col: "<<  col<<std::endl;   
+    std::cout << "rows: "<< rows << ", col: "<<  col<<std::endl;   
         
-
+    //std::cout << "matrix_function start: "  << std::endl;
     matrix_a.resize(rows);
-    for(int i = 0 ; i <rows ; i=i+steps)
+    for(int i = 0 ; i <rows ; i=i+1)
         {
             //Grow Columns by n
             matrix_a[i].resize(col);
         }
+        std::cout << "matix: " << matrix_a.size() << '\n';
+
  
 
-    for(int i=0; i<rows; i=i+steps){
-        for(int j=0; j<col;j=j+steps){
+    for(int i=0; i<rows; i=i+1){
+        for(int j=0; j<col;j=j+1){
             matrix_a[i][j].x_pos=i;
             matrix_a[i][j].y_pos=j;
             matrix_a[i][j].weight = 0;
@@ -128,7 +134,7 @@ void matrix_function()
         }
     }
     matrix_created=1;
-    std::cout << "matrix_created:"<< std::endl;
+    //std::cout << "matrix_created:"<< std::endl;
     }
 void map_request_function(){
     std_msgs::Bool bool_msg;
@@ -141,68 +147,61 @@ void map_request_function(){
 void matrix_to_vector_convert_function(){
 
     
-    grid_.data.resize(rows*col);
+    grid_cost.data.resize(rows*col);
+    grid_obs.data.resize(rows*col);
     vec_data.data.resize(rows*col);
-    grid_.info.origin.position.x =0.0;
-    grid_.info.origin.position.y =0.0,
-    grid_.info.origin.position.z =0.0;
-    grid_.info.origin.orientation.w = 1.0;
-    grid_.info.width = rows;
-    grid_.info.height = col;
-    grid_.info.resolution = 0.01;
+    grid_cost.info.origin.position.x =0.0;
+    grid_cost.info.origin.position.y =0.0,
+    grid_cost.info.origin.position.z =0.0;
+    grid_cost.info.origin.orientation.w = 1.0;
+    grid_cost.info.width = rows;
+    grid_cost.info.height = col;
+    grid_cost.info.resolution = steps;
+
+    grid_obs.info.origin.position.x =0.0;
+    grid_obs.info.origin.position.y =0.0,
+    grid_obs.info.origin.position.z =0.0;
+    grid_obs.info.origin.orientation.w = 1.0;
+    grid_obs.info.width = rows;
+    grid_obs.info.height = col;
+    grid_obs.info.resolution = steps;
 
 
     
-    for(int i=0; i<col; i=i+steps){  //col=245; 
-        for(int j=0; j<rows;j=j+steps){    //rows=249;
-            grid_.data[((rows*i)+j)] = matrix_a[j][i].weight;
+    for(int i=0; i<col; i=i+1){  //col=245; 
+        for(int j=0; j<rows;j=j+1){    //rows=249;
+            grid_cost.data[((rows*i)+j)] = matrix_a[j][i].weight;
+            grid_obs.data[((rows*i)+j)] = matrix_a[j][i].observed;
             vec_data.data[((rows*i)+j)] = matrix_a[j][i].weight;
-            // if(i==0){
-            //     std::cout << "vector: "<< ((col*i)+j)<< " , grid: "<<(int)grid_.data[((col*i)+j)]<<" , matrix:" << matrix_a[i][j].weight<<  std::endl;
-            // }
+
         } 
     }
-
-        // std::cout << "data:"<<  std::endl;
-        // std::cout << "   1:"<<  (int)grid_.data[0]      <<" , "      << matrix_a[0][0].weight<< std::endl; 
-        // std::cout << "   2:"<<  (int)grid_.data[1]      <<" , "      << matrix_a[1][0].weight<< std::endl; 
-        // std::cout << "   5:"<<  (int)grid_.data[4]      <<" , "      << matrix_a[2][0].weight<< std::endl; 
-        // std::cout << "  10:"<<  (int)grid_.data[9]      <<" , "      << matrix_a[4][0].weight<< std::endl; 
-        // std::cout << " 240:"<<  (int)grid_.data[239]    <<" , "      << matrix_a[239][0].weight<< std::endl; 
-        // std::cout << " 241:"<<  (int)grid_.data[240]    <<" , "      << matrix_a[240][0].weight<< std::endl; 
-        // std::cout << " 242:"<<  (int)grid_.data[241]    <<" , "      << matrix_a[241][0].weight<< std::endl; 
-        // std::cout << " 243:"<<  (int)grid_.data[242]    <<" , "      << matrix_a[242][0].weight<< std::endl; 
-        // std::cout << " 244:"<<  (int)grid_.data[243]    <<" , "      << matrix_a[243][0].weight<< std::endl; 
-        // std::cout << " 245:"<<  (int)grid_.data[244]    <<" , "      << matrix_a[244][0].weight<< std::endl; 
-        // std::cout << " 246:"<<  (int)grid_.data[245]    <<" , "      << matrix_a[245][0].weight<< std::endl; 
-        // std::cout << " 247:"<<  (int)grid_.data[246]    <<" , "      << matrix_a[246][0].weight<< std::endl; 
-        // std::cout << " 248:"<<  (int)grid_.data[247]    <<" , "      << matrix_a[247][0].weight<< std::endl; 
-        // std::cout << " 249:"<<  (int)grid_.data[248]    <<" , "      << matrix_a[248][0].weight<< std::endl;
-        // std::cout << " 250:"<<  (int)grid_.data[249]    <<" , "      << matrix_a[0][1].weight<< std::endl; 
-        // std::cout << " 251:"<<  (int)grid_.data[250]    <<" , "      << matrix_a[1][1].weight<< std::endl; 
-        // std::cout << " 252:"<<  (int)grid_.data[251]    <<" , "      << matrix_a[2][1].weight<< std::endl; 
-        // std::cout << " 498:"<<  (int)grid_.data[497]    <<" , "      << matrix_a[0][2].weight<< std::endl;
-        // std::cout << " 747:"<<  (int)grid_.data[746]    <<" , "      << matrix_a[0][3].weight<< std::endl;
-        // std::cout << " 996:"<<  (int)grid_.data[995]    <<" , "      << matrix_a[0][4].weight<< std::endl;
+    // std::cout << "plats 259: "<< matrix_a[248][5].weight<< std::endl; 
+    // std::cout << "plats 258: "<< matrix_a[247][5].weight<< std::endl; 
+    // std::cout << "plats 1: "<< matrix_a[1][5].weight<< std::endl;  
+    // std::cout << "plats 0: "<< matrix_a[0][5].weight<< std::endl;     
 }
 
 void send_grid_function(){
-    //if (grid_map_pub.getNumSubscribers() > 0 )
+    //if (grid_cost_map_pub.getNumSubscribers() > 0 )
     //{
       
         
-        //costmap_2d::VoxelGrid grid_;
+        //costmap_2d::VoxelGrid grid_cost;
         // std::cout << "--------------------------------------------------"<<  std::endl;
-        // std::cout << "   1:"<<  (int)grid_.data[0]      <<" , "      << matrix_a[0][0].weight<< std::endl; 
-        // std::cout << "   2:"<<  (int)grid_.data[1]      <<" , "      << matrix_a[0][1].weight<< std::endl; 
-        // std::cout << " 499:"<<  (int)grid_.data[499]    <<" , "      << matrix_a[0][499].weight<< std::endl; 
-        // std::cout << " 500:"<<  grid_.data[500]    <<" , "      << matrix_a[1][0].weight<< std::endl; 
-        // std::cout << " 501:"<<  grid_.data[501]    <<" , "      << matrix_a[1][1].weight<< std::endl; 
+        // std::cout << "   1:"<<  (int)grid_cost.data[0]      <<" , "      << matrix_a[0][0].weight<< std::endl; 
+        // std::cout << "   2:"<<  (int)grid_cost.data[1]      <<" , "      << matrix_a[0][1].weight<< std::endl; 
+        // std::cout << " 499:"<<  (int)grid_cost.data[499]    <<" , "      << matrix_a[0][499].weight<< std::endl; 
+        // std::cout << " 500:"<<  grid_cost.data[500]    <<" , "      << matrix_a[1][0].weight<< std::endl; 
+        // std::cout << " 501:"<<  grid_cost.data[501]    <<" , "      << matrix_a[1][1].weight<< std::endl; 
         //  std::cout << "----------------*******************------------------"<<  std::endl;
-        grid_.header.frame_id = "/map";
-        grid_.header.stamp = ros::Time::now();
+        grid_cost.header.frame_id = "/map";
+        grid_cost.header.stamp = ros::Time::now();
+        grid_obs.header.frame_id = "/map";
+        grid_obs.header.stamp = ros::Time::now();
         //std::cout << "punkt:"<< matrix_a[100][100].weight<< std::endl;
-        grid_map_pub.publish(grid_);
+        grid_cost_map_pub.publish(grid_cost);
+        grid_obs_map_pub.publish(grid_obs);
         vec_map_pub.publish(vec_data);
         grid_update_query=0;
     //}
@@ -228,68 +227,105 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
     //std::cout << "Inne i funktionen"<<std::endl;
     NUM_WALLS=msg->number_of_walls;
     double walls[NUM_WALLS][4];    
-    length_x_wall=0;
-    length_y_wall=0;
+    
+     int x_wall_min=0;
+     int x_wall_max=0;
+     int y_wall_min=0;
+     int y_wall_max=0;
+
+    std::cout << "read_map_2 : "<< std::endl;
     for(int i=0;i<NUM_WALLS;i++){
         walls[i][0] = msg->points[i*4];
         walls[i][1] = msg->points[i*4+1];
         walls[i][2] = msg->points[i*4+2];
         walls[i][3] = msg->points[i*4+3];
-        //std::cout << "data NUMMER: "<< i <<" ("<< walls[i][0]<<", "<<walls[i][1] <<") , ("<< walls[i][2]<<", "<< walls[i][3]<<") "<<std::endl;
-    if(std::abs(floor((walls[i][0]*100))-(floor(walls[i][2]*100)))>length_x_wall){
 
-                    length_x_wall=(std::abs(floor((walls[i][0]*100))-(floor(walls[i][2]*100))));
-                }
-                if(std::abs(floor((walls[i][1]*100))-(floor(walls[i][3]*100)))>length_y_wall){
 
-                    length_y_wall=(std::abs(floor((walls[i][1]*100))-(floor(walls[i][3]*100))));
-                }
 
+            //std::cout << "data NUMMER: "<< i <<" ("<< walls[i][0]<<", "<<walls[i][1] <<") , ("<< walls[i][2]<<", "<< walls[i][3]<<") "<<std::endl;
+        if(((walls[i][0]*100)/steps)<x_wall_min){
+        x_wall_min=((walls[i][0]*100)/steps);                   
+        }
+        if(((walls[i][2]*100)/steps)<x_wall_min){ 
+        x_wall_min=((walls[i][2]*100)/steps);                      
+        }
+        if(((walls[i][0]*100)/steps)>x_wall_max){ 
+        x_wall_max=((walls[i][0]*100)/steps);                    
+        }
+        if(((walls[i][2]*100)/steps)>x_wall_max){ 
+        x_wall_max=((walls[i][2]*100)/steps);                     
+        }
+
+        if(((walls[i][1]*100)/steps)<y_wall_min){ 
+        y_wall_min=((walls[i][1]*100)/steps);                      
+        }
+        if(((walls[i][3]*100)/steps)<y_wall_min){ 
+        y_wall_min=((walls[i][3]*100)/steps);                      
+        }
+        if(((walls[i][1]*100)/steps)>y_wall_max){
+        y_wall_max=((walls[i][1]*100)/steps);                      
+        }
+        if(((walls[i][3]*100)/steps)>y_wall_max){  
+        y_wall_max=((walls[i][3]*100)/steps);                    
+        }
 
     }
+    length_x_wall=x_wall_max-x_wall_min;
+    length_y_wall=y_wall_max-y_wall_min;
     
-
+    //std::cout << "read_map_2 mid: "<< std::endl;
     matrix_function();
+    //std::cout << "matrix_function done: "<< std::endl;
     //has_map = true;
     //add_weight_map_function();
 // }
 
 // void add_weight_map_function(){
     //std::cout << "data:"<< matrix_a[5][7].weight << ", "<<  matrix_a[5][7].observed<<std::endl;
+        //std::cout << "read_map_2 andra: " << std::endl;
     for(int i=0;i<NUM_WALLS;i++){ 
         count=0;
+        //std::cout << "read_map_2 continue: "<< i  << std::endl;
         //std::cout << "data: "<< i << std::endl;
         if((floor((walls[i][0]*100))-(floor(walls[i][2]*100))) != 0 ){
             //std::cout << "data: "<< i << std::endl;
             if((walls[i][0]*100)<(walls[i][2]*100)){
-                xStart=(walls[i][0]*100);
-                xEnd =(walls[i][2]*100);
-                yStart=(walls[i][1]*100);
-                yEnd =(walls[i][3]*100);
+                xStart=(walls[i][0]*100)/steps;
+                xEnd =(walls[i][2]*100)/steps;
+                yStart=(walls[i][1]*100/steps);
+                yEnd =(walls[i][3]*100)/steps;
                 count=(xEnd-xStart);
-
+                // std::cout << "xStart: "<< xStart  << std::endl;
+                // std::cout << "xEnd: "<< xEnd  << std::endl;
+                // std::cout << "yStart: "<< yStart  << std::endl;
+                // std::cout << "yEnd "<< yEnd << std::endl;
+                
                 yStep = (yStart-yEnd)/count;
+               // std::cout << "data: "<< yStep  << std::endl<< std::endl;
                 y=yStart;
-                for (double xTemp = floor(xStart); xTemp < floor(xEnd); xTemp=xTemp+steps ){//every point with one centimeters differnce.
-                    
+                //std::cout << "före loopen: "<< i  << std::endl;
+                for (double xTemp = floor(xStart); xTemp <= floor(xEnd); xTemp=xTemp+1 ){//every point with one centimeters differnce.
+                    //std::cout << "i loopen, xTemp: "<< xTemp  << std::endl;
                     matrix_a[xTemp][floor(y)].weight=100;
+                    //std::cout << "i loopen mid, xTemp: "<< xTemp  << std::endl;
                     // if(i<6){
                     //     std::cout << "("<<xTemp<<", "<< floor(y) <<")" << std::endl;   
                     // }
                     
-                    y=y + yStep;            
+                    y=y + yStep;
+                    //std::cout << "i loopen end: "<< y  << std::endl;            
                 }
             }
             if((walls[i][0]*100)>(walls[i][2]*100)){
-                xStart=(walls[i][2]*100);
-                xEnd =(walls[i][0]*100);
-                yStart=(walls[i][3]*100);
-                yEnd =(walls[i][1]*100);
+                xStart=(walls[i][2]*100)/steps;
+                xEnd =(walls[i][0]*100)/steps;
+                yStart=(walls[i][3]*100)/steps;
+                yEnd =(walls[i][1]*100)/steps;
                 count=(xEnd-xStart);
                 yStep = (yStart-yEnd)/count;
 
                 y=yStart;
-                for (double xTemp = floor(xStart); xTemp < floor(xEnd); xTemp=xTemp+steps ){//every point with one centimeters differnce.
+                for (double xTemp = floor(xStart); xTemp < floor(xEnd); xTemp=xTemp+1 ){//every point with one centimeters differnce.
                     
                     matrix_a[xTemp][floor(y)].weight=100;
                     // if(i<6){
@@ -301,14 +337,14 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
             }
         }else{
             //std::cout << "Else: "<< i <<" , "<<floor(walls[i][2]*100)<< std::endl;
-            xSamePos=floor(walls[i][2]*100);
+            xSamePos=floor(walls[i][2]*100/steps);
             
             if(floor(walls[i][1]*100)<=floor(walls[i][3]*100)){
-                yStart=(walls[i][1]*100);
-                yEnd =(walls[i][3]*100);
+                yStart=(walls[i][1]*100)/steps;
+                yEnd =(walls[i][3]*100)/steps;
             }else{
-                yStart=(walls[i][3]*100);
-                yEnd =(walls[i][1]*100);
+                yStart=(walls[i][3]*100/steps);
+                yEnd =(walls[i][1]*100)/steps;
             }
             count=(yEnd-yStart);
 
@@ -322,12 +358,12 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
             
 
 
-            for (double yTemp = floor(yStart); yTemp < floor(yEnd); yTemp=yTemp+steps ){
+            for (double yTemp = floor(yStart); yTemp < floor(yEnd); yTemp=yTemp+1 ){
                 matrix_a[xSamePos][yTemp].weight=100;
                 //std::cout << "("<<xSamePos<<", "<< yTemp <<")" << std::endl;
             }
         }
-
+        //std::cout << "read_map_2 done: " << std::endl;
          add_cost_values_function();
          matrix_to_vector_convert_function();
     }  
@@ -335,72 +371,48 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
 }
 
 void add_cost_values_function(){
+    
     int wall_cost_vec[] = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
-    int cost_steps = 14;
-    for(int i=0; i<rows; i=i+steps){
-        for(int j=0; j<col;j=j+steps){
-            //matrix_a[i][j].x_pos=i;
-            //matrix_a[i][j].y_pos=j;
-            //matrix_a[i][j].weight = -1;
-            //matrix_a[i][j].observed = 0;
+    if(steps==2){
+        int wall_cost_vec[] = {99,95,85,70,55,40,25,10,5};
+    }
+    int cost_steps = 14/steps;
+    for(int i=0; i<rows; i=i+1){
+        for(int j=0; j<col;j=j+1){
             if (matrix_a[i][j].weight==100){
                 add_cost_weight(i,j,cost_steps,wall_cost_vec);
                 //std::cout << "Done for wall at point (x,y)=("<< i << ","<< j <<")" <<std::endl;
-                
                 }
-
-
-
             }
         }
     }  
 
 void add_cost_weight(int x, int y, int depth, int* wall_cost_vec){
     //std::vector<int> wall_cost_vec = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
-    
-    for (int n=1;n<=depth;n++){
-        
-         if((x-n)>0){
-            if((x+n)<rows){
-                if((y-n)>0){
-                    if((y+n)<col){
-                        for(int i=(x-n);i<=(x+n);i=i+steps){ //rows
-                            //std::cout << "x: "<< i << ", n: "<< n<<", (y-n): "<< (y-n) << ", (y+n): "<< (y+n) <<std::endl;
-
-                            for(int j=(y-n);j<=(y+n);j=j+steps){ //cols
-                                //std::cout << "x: "<< i << ", y: "<< j<<", weight: "<< matrix_a[i][j].weight << std::endl;
-                                
+    for (int n=0;n<=depth;n++){
+        if((x-n)>=0){
+            if((x+n)<=(rows-1)){
+                if((y-n)>=0){
+                    if((y+n)<=(col-1)){
+                        for(int i=(x-n);i<=(x+n);i=i+1){ //rows
+                            for(int j=(y-n);j<=(y+n);j=j+1){ //cols
                                 if(matrix_a[i][j].weight!=100){
-                //                         std::cout << "____________"<< std::endl;
-                                         //std::cout << "x: "<< i << ", y: "<< j<< std::endl;
                                     if( matrix_a[i][j].weight<wall_cost_vec[n]){
                                         matrix_a[i][j].weight=wall_cost_vec[n];
-
-                // //                     }
-                                    
                                     }
                                 }
-                                //std::cout << "x.: "<< i << ", y.: "<< j<<", weight: "<< matrix_a[i][j].weight << std::endl;        
-                                
                             }
-                            //std::cout << "____________"<< std::endl;
                         }
-                        //std::cout << "++++++++++"<< std::endl;
                     }
-                    //std::cout << "-----------"<< std::endl;
                 }
-                //std::cout << "************"<< std::endl;
-             }
+            }
          } 
-
         if(x==0){
-            //do y
             if((matrix_a[(x+n)][y].weight!=100)||(matrix_a[(x+n)][y].weight!=99)){
                 if( matrix_a[(x+n)][y].weight<wall_cost_vec[n]){
                     matrix_a[(x+n)][y].weight=wall_cost_vec[n];
                 }
             }
-            //std::cout << "____________"<< std::endl;
         } 
 
         if(x==(rows-1)){
@@ -411,24 +423,19 @@ void add_cost_weight(int x, int y, int depth, int* wall_cost_vec){
                 }
             }
         } 
-        
         if(y==0){
             if((matrix_a[x][(y+n)].weight!=100)||(matrix_a[x][(y+n)].weight!=99)){
                 if( matrix_a[x][(y+n)].weight<wall_cost_vec[n]){
                      matrix_a[x][(y+n)].weight=wall_cost_vec[n];
-                    //std::cout << "-----------"<<  std::endl;
                 }
             }
         } 
         if(y==(col-1)){
-            //do y
             if((matrix_a[x][(y-n)].weight!=100)||(matrix_a[x][(y-n)].weight!=99)){
                 if( matrix_a[x][(y-n)].weight<wall_cost_vec[n]){
                      matrix_a[x][(y-n)].weight=wall_cost_vec[n];
-                    //std::cout << "************"<< std::endl;
                 }
             }
-            
         }   
     }
 }
@@ -438,14 +445,17 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
         return;
     }
     int object_cost_vec[] = {99,90,80,70,60,50,40,30,20,10};
-    int cost_steps = 9;
+    if(steps==2){
+        int wall_cost_vec[] = {99,95,70,50,35,20,10};
+    }
+    int cost_steps = 9/steps;
     int object_radius = 2;
     geometry_msgs::Point point_out;
     point_out=msg->point;
 
     
-    int x = (int)floor(point_out.x);
-    int y = (int)floor(point_out.y);
+    int x = (int)floor(point_out.x)/steps;
+    int y = (int)floor(point_out.y)/steps;
 
     int obj_width = object_radius;
 
@@ -494,6 +504,12 @@ private:
  int xSamePos;
  int grid_update_query;
  int steps;
+
+ int x_wall_min;
+ int x_wall_max;
+ int y_wall_min;
+ int y_wall_max;
+
  int length_x_wall;
  int length_y_wall;
  int matrix_created;
