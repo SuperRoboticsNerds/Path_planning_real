@@ -374,21 +374,22 @@ void add_cost_values_function(){
     
     int wall_cost_vec[] = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
     if(steps==2){
-        int wall_cost_vec[] = {99,95,85,70,55,40,25,10,5};
+        int wall_cost_vec[] = {86,1,1,1,1,1,1};
     }
     int cost_steps = 14/steps;
     for(int i=0; i<rows; i=i+1){
         for(int j=0; j<col;j=j+1){
             if (matrix_a[i][j].weight==100){
-                add_cost_weight(i,j,cost_steps,wall_cost_vec);
+                add_cost_weight(i,j,cost_steps);//,wall_cost_vec);
                 //std::cout << "Done for wall at point (x,y)=("<< i << ","<< j <<")" <<std::endl;
                 }
             }
         }
     }  
 
-void add_cost_weight(int x, int y, int depth, int* wall_cost_vec){
+void add_cost_weight(int x, int y, int depth){//, int wall_cost_vec[]){
     //std::vector<int> wall_cost_vec = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
+    int wall_cost_vec[] = {86,72,58,44,30,16,2};
     for (int n=0;n<=depth;n++){
         if((x-n)>=0){
             if((x+n)<=(rows-1)){
@@ -468,7 +469,7 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
                             for(int j=(y-obj_width);j<=(y+obj_width);j++){
                                 //std::cout << "x: "<< x << ", y: "<< y<< std::endl;
                                 matrix_a[(i)][(j)].weight=99;
-                                add_cost_weight(i,j,cost_steps,object_cost_vec);
+                                add_cost_weight(i,j,cost_steps);//,object_cost_vec);
                             }
                         }
                     }
