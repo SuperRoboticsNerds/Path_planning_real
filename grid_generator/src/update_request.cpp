@@ -36,21 +36,31 @@ private:
 
 int main(int argc, char **argv)
 {
-
+    int counter;
+    counter=0;
     ros::init(argc, argv, "update_request_node");
     UpdateRequestNode update_request_node;
-    update_request_node.pub_func();
+    
+
 
     // Control @ 10 Hz
-    // double control_frequency = 10.0;
-    // ros::Rate loop_rate(control_frequency);
+    double control_frequency = 10.0;
+  
+    ros::Rate loop_rate(control_frequency);
+    // while (ros::ok())
+    
 
-    // while(update_request_node.n.ok())
-    // {
+    while(update_request_node.n.ok())
+    {
+        if (counter == 5){
+            update_request_node.pub_func();
+        }
+
         
-    //     ros::spinOnce();
-    //     loop_rate.sleep();
-    // }
+        counter++;
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
 
     return 0;
 }
