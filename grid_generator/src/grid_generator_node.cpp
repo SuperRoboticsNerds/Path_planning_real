@@ -239,7 +239,10 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
         walls[i][1] = msg->points[i*4+1];
         walls[i][2] = msg->points[i*4+2];
         walls[i][3] = msg->points[i*4+3];
-
+    // std::cout << "x_wall_max: "<< walls[i][0] << " x_wall_max: "<< msg->points[i*4] << std::endl;
+    // std::cout << "x_wall_min: "<< walls[i][1] << " x_wall_max: "<< msg->points[i*4+1] << std::endl;
+    // std::cout << "y_wall_max: "<< walls[i][2] << " x_wall_max: "<< msg->points[i*4+2] << std::endl;
+    // std::cout << "y_wall_min: "<< walls[i][3] << " x_wall_max: "<< msg->points[i*4+3] << std::endl<< std::endl;
 
 
             //std::cout << "data NUMMER: "<< i <<" ("<< walls[i][0]<<", "<<walls[i][1] <<") , ("<< walls[i][2]<<", "<< walls[i][3]<<") "<<std::endl;
@@ -270,6 +273,10 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
         }
 
     }
+    // std::cout << "x_wall_max: "<< x_wall_max << std::endl;
+    // std::cout << "x_wall_min: "<< x_wall_min << std::endl;
+    // std::cout << "y_wall_max: "<< y_wall_max << std::endl;
+    // std::cout << "y_wall_min: "<< y_wall_min << std::endl;
     length_x_wall=x_wall_max-x_wall_min;
     length_y_wall=y_wall_max-y_wall_min;
     
@@ -304,7 +311,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
                // std::cout << "data: "<< yStep  << std::endl<< std::endl;
                 y=yStart;
                 //std::cout << "före loopen: "<< i  << std::endl;
-                for (double xTemp = floor(xStart); xTemp <= floor(xEnd); xTemp=xTemp+1 ){//every point with one centimeters differnce.
+                for (double xTemp = floor(xStart); xTemp < floor(xEnd); xTemp=xTemp+1 ){//every point with one centimeters differnce.
                     //std::cout << "i loopen, xTemp: "<< xTemp  << std::endl;
                     matrix_a[xTemp][floor(y)].weight=100;
                     //std::cout << "i loopen mid, xTemp: "<< xTemp  << std::endl;
@@ -325,6 +332,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
                 yStep = (yStart-yEnd)/count;
 
                 y=yStart;
+                //std::cout << "före loopen 2: "<< i  << std::endl;
                 for (double xTemp = floor(xStart); xTemp < floor(xEnd); xTemp=xTemp+1 ){//every point with one centimeters differnce.
                     
                     matrix_a[xTemp][floor(y)].weight=100;
@@ -338,7 +346,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
         }else{
             //std::cout << "Else: "<< i <<" , "<<floor(walls[i][2]*100)<< std::endl;
             xSamePos=floor(walls[i][2]*100/steps);
-            
+            //std::cout << "Else 2: "<< i <<" , "<<floor(walls[i][2]*100)<< std::endl;
             if(floor(walls[i][1]*100)<=floor(walls[i][3]*100)){
                 yStart=(walls[i][1]*100)/steps;
                 yEnd =(walls[i][3]*100)/steps;
@@ -346,13 +354,14 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
                 yStart=(walls[i][3]*100/steps);
                 yEnd =(walls[i][1]*100)/steps;
             }
+            //std::cout << "Else 3: "<< i <<" , "<<floor(walls[i][2]*100)<< std::endl;
             count=(yEnd-yStart);
 
 
             xStep = (xSamePos)/count;
             x=xStart;
-            // std::cout << "nbr: "<< i <<" ,yStart:"<<floor(yStart)<< std::endl;
-            // std::cout << "nbr: "<< i <<" ,yEnd: "<<floor(yEnd)<< std::endl;
+             //std::cout << "nbr: "<< i <<" ,yStart:"<<floor(yStart)<< std::endl;
+             //std::cout << "nbr: "<< i <<" ,yEnd: "<<floor(yEnd)<< std::endl;
             // std::cout << "nbr: "<< i <<" ,count: "<<(yEnd-yStart)<< std::endl;
             // std::cout << "nbr: "<< i <<" ,xStep: "<<(xStep)<< std::endl;
             
@@ -372,15 +381,12 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
 
 void add_cost_values_function(){
     
-    int wall_cost_vec[] = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
-    if(steps==2){
-        int wall_cost_vec[] = {86,1,1,1,1,1,1};
-    }
+
     int cost_steps = 14/steps;
     for(int i=0; i<rows; i=i+1){
         for(int j=0; j<col;j=j+1){
             if (matrix_a[i][j].weight==100){
-                add_cost_weight(i,j,cost_steps);//,wall_cost_vec);
+                add_cost_weight(i,j,cost_steps);
                 //std::cout << "Done for wall at point (x,y)=("<< i << ","<< j <<")" <<std::endl;
                 }
             }
@@ -389,7 +395,11 @@ void add_cost_values_function(){
 
 void add_cost_weight(int x, int y, int depth){//, int wall_cost_vec[]){
     //std::vector<int> wall_cost_vec = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
-    int wall_cost_vec[] = {86,72,58,44,30,16,2};
+    int wall_cost_vec[] = {93,87,79,72,65,58,51,44,37,30,23,16,9,2,1,1,1};
+    if(steps==2){
+        int wall_cost_vec[] = {86,72,58,44,30,16,2,1,1};
+    }
+
     for (int n=0;n<=depth;n++){
         if((x-n)>=0){
             if((x+n)<=(rows-1)){
@@ -445,10 +455,11 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
     if(matrix_created==0){
         return;
     }
-    int object_cost_vec[] = {99,90,80,70,60,50,40,30,20,10};
-    if(steps==2){
-        int wall_cost_vec[] = {99,95,70,50,35,20,10};
-    }
+    std::cout << "data:"<< std::endl;
+    // int object_cost_vec[] = {99,90,80,70,60,50,40,30,20,10};
+    // if(steps==2){
+    //     int wall_cost_vec[] = {99,95,70,50,35,20,10};
+    // }
     int cost_steps = 9/steps;
     int object_radius = 1;
     geometry_msgs::Point point_out;
@@ -469,7 +480,7 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
                             for(int j=(y-obj_width);j<=(y+obj_width);j++){
                                 //std::cout << "x: "<< x << ", y: "<< y<< std::endl;
                                 matrix_a[(i)][(j)].weight=99;
-                                add_cost_weight(i,j,cost_steps);//,object_cost_vec);
+                                add_cost_weight(i,j,cost_steps);
                             }
                         }
                     }
