@@ -485,7 +485,6 @@ int main(int argc, char **argv)
     		has_data =false;
     	}
 
-    	counter++;
      	ros::spinOnce();
     	loop_rate.sleep();
     }
