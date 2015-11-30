@@ -29,13 +29,13 @@ struct Edge
 //Global 
 int rows = 249; // cm
 int cols = 245; // cm
-int num_nodes = 500; 
+int num_nodes = 750; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
 std::vector<node> path_vec;
 ros::Publisher marker_pub;
-ros::Publisher nodes_pub;
+ros::Publisher path_pub;
 ros::Subscriber grid_vec;
 std::vector<float> data_grid;
 bool has_data = false;
@@ -162,21 +162,21 @@ void update_nodes()
 }
 
 
-void publish_nodes()
+void publish_path()
 {
 	nav_msgs::GridCells msg;
 	geometry_msgs::Point msg_aux;
 
 	for(int i=0; i<node_vec.size(); i++)
 	{
-		msg_aux.x = node_vec[i].y;
-    	msg_aux.y = node_vec[i].x;
-    	msg_aux.z = node_vec[i].weight;
+		msg_aux.x = path_vec[i].x;
+    	msg_aux.y = path_vec[i].y;
+    	msg_aux.z = 0;
 
 		msg.cells.push_back(msg_aux);
 	} 
 
-    nodes_pub.publish(msg);
+    path_pub.publish(msg);
  }
 
  bool detect_connection(node n1, node n2)
@@ -256,7 +256,7 @@ std::vector<std::vector<Edge> > create_graph()
 
 	for( int i = 0; i < node_vec.size(); i++ ) 
 	{
-		for(int j=0 ; j< node_vec.size(); j++)
+		for(int j=i ; j< node_vec.size(); j++)
 		{
 			if(detect_connection(node_vec[i], node_vec[j]))
 			{
@@ -460,8 +460,8 @@ int main(int argc, char **argv)
 
 	//Topics 
 	grid_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_map/to_nodes",100, read_grid_vect);
-	nodes_pub = n.advertise<nav_msgs::GridCells>( "/nodes_generator/valid_nodes", 100);
-	marker_pub = n.advertise<visualization_msgs::MarkerArray>( "visualization_msgs/MarkerArray/nodes", 0);
+	path_pub = n.advertise<nav_msgs::GridCells>( "/nodes_generator/path", 100);
+	marker_pub = n.advertise<visualization_msgs::MarkerArray>( "visualization_msgs/MarkerArray/nodes", 1);
 
 	int src = 0;
   	int target=0;
@@ -481,6 +481,7 @@ int main(int argc, char **argv)
 			// target = rand() % node_vec.size() + 1;     // v2 in the range 1 to 100
 			target = 30;
     		find_path(graph, src, target);
+    		publish_path();
     		show_nodes();
     		has_data =false;
     	}

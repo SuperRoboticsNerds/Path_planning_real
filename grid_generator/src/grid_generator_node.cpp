@@ -74,7 +74,7 @@ public:
     
         grid_update_query=1;
         matrix_created=0;
-        steps=2;
+        steps=1;
         // rows=300; 
         // col=300;
         
