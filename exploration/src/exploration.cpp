@@ -29,7 +29,7 @@ struct Edge
 //Global 
 int rows = 249; // cm
 int cols = 245; // cm
-int num_nodes = 750; 
+int num_nodes = 500; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
@@ -38,6 +38,7 @@ ros::Publisher marker_pub;
 ros::Publisher path_pub;
 ros::Subscriber grid_vec;
 std::vector<float> data_grid;
+std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols));
 bool has_data = false;
 int V;
 
@@ -70,11 +71,8 @@ void read_grid_vect(const std_msgs::Float32MultiArray::ConstPtr &msg)
 	has_data =true;
 }
 
-std::vector< std::vector<node> > read_matrix()
+void read_matrix()
 {
-	std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols));
-
-
 	for(int i=0; i<(rows); i++)
 	{
         for(int j=0; j<(cols);j++)
@@ -82,11 +80,9 @@ std::vector< std::vector<node> > read_matrix()
             matrix[i][j].weight = (int)data_grid[((rows*i -1)+j)];
         } 
     }
-
- 	return matrix;
 }
 
-int detect_walls(int x_pos, int y_pos, std::vector< std::vector<node> > matrix)
+int detect_walls(int x_pos, int y_pos)
 {
 
 	int i=0;
@@ -139,15 +135,10 @@ void update_nodes()
 	int k=0;
 	int sum =0;
 	int erasenum = 0;
-	std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols)); 
-
-	
-	matrix = read_matrix();
 
 	for(k=0; k<node_vec.size(); k++)
 	{
-		sum = detect_walls(node_vec[k].x, node_vec[k].y	, matrix);
-
+		sum = detect_walls(node_vec[k].x, node_vec[k].y);
 
 		if( sum == -2 )
 		{	
@@ -184,10 +175,6 @@ void publish_path()
 	int smallest;
 	int biggest;
 	int step=robot_width/4; //5 lines
-
-	std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols)); 
-	
-	matrix = read_matrix();
 
 	if(n1.y == n2.y && n1.x == n2.x) return false;
 
@@ -256,7 +243,7 @@ std::vector<std::vector<Edge> > create_graph()
 
 	for( int i = 0; i < node_vec.size(); i++ ) 
 	{
-		for(int j=i ; j< node_vec.size(); j++)
+		for(int j=0 ; j< node_vec.size(); j++)
 		{
 			if(detect_connection(node_vec[i], node_vec[j]))
 			{
@@ -429,9 +416,8 @@ void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
 	while(k != src)
 	{
 		// printf(" -> %d ", parent[k]);
-
+		std::cout << "k= " << k << std::endl;
 		path_vec.push_back(graph[k][k].src);
-
 		k = parent[k];
 	}
 	// printf(" \n");
@@ -447,9 +433,7 @@ void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
 	// 	i = parent[i];
 	// 	counter++;
 	// }
-
-	// publish_path();
-	show_path();    
+ 
 }
 
 
@@ -475,14 +459,21 @@ int main(int argc, char **argv)
     {
     	if(has_data) 
     	{
+    		std::cout << "Reading matrix..."<< std::endl;
+    		read_matrix();
+    		std::cout << "Updating nodes..."<< std::endl;
     		update_nodes();
+    		show_nodes();
+    		std::cout << "Creating graph..."<< std::endl;
     		graph = create_graph();
     		V=node_vec.size();
 			// target = rand() % node_vec.size() + 1;     // v2 in the range 1 to 100
 			target = 30;
+			std::cout << "Finding path..."<< std::endl;
     		find_path(graph, src, target);
+    		std::cout << "DONE! Showing path..."<< std::endl;
+			show_path(); 
     		publish_path();
-    		show_nodes();
     		has_data =false;
     	}
 
