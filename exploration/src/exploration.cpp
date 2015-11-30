@@ -7,10 +7,6 @@
 #include <std_msgs/Float32MultiArray.h>
 #include <nav_msgs/GridCells.h>
 #include <geometry_msgs/Point.h>
-
-// A C / C++ program for Dijkstra's single source shortest path algorithm.
-// The program is for adjacency matrix representation of the graph
- 
 #include <stdio.h>
 #include <limits.h>
 
@@ -26,16 +22,18 @@ struct node
 struct Edge
 {
     node destination;
+    node src;
     int move_cost;
 };
 
 //Global 
 int rows = 249; // cm
 int cols = 245; // cm
-int num_nodes = 50; 
+int num_nodes = 500; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
+std::vector<node> path_vec;
 ros::Publisher marker_pub;
 ros::Publisher nodes_pub;
 ros::Subscriber grid_vec;
@@ -239,9 +237,20 @@ void publish_nodes()
 	return false;
 }
 
+int movement_cost(node src, node dest)
+{
+	int heuristic = abs(src.x - dest.x) + abs(src.y - dest.y);
+	int cost_move = 10000;
+	int total=0;
 
 
-void create_graph()
+	total= heuristic;// + cost_move + src.weight;
+
+	return total;
+}
+
+
+std::vector<std::vector<Edge> > create_graph()
 {
 	std::vector<std::vector<Edge> > graph(node_vec.size(), std::vector<Edge>(node_vec.size()));
 
@@ -253,14 +262,26 @@ void create_graph()
 			{
 				// std::cout << "Graph"<< i<< ":"<< std::endl;
 				graph[i][j].destination = node_vec[j];
-				graph[i][j].move_cost = 10000;
-				// std::cout << "     Conexão(" << j << ") : x="<< graph[i][j].destination.x << "  y=" << graph[i][j].destination.y << " weight =" << graph[i][j].destination.weight << std::endl;
+				graph[i][j].src = node_vec[i];
+				graph[i][j].move_cost = movement_cost(graph[i][j].src, graph[i][j].destination);
+				// std::cout << "     Conexão(" << j << ") : x="<< graph[i][j].destination.x << "  y=" << graph[i][j].destination.y << " weight =" << graph[i][j].move_cost << std::endl;
 			}else
 			{
-				graph[i][j].move_cost = -1;
+				if(i==j)
+				{
+					graph[i][j].destination = node_vec[j];
+					graph[i][j].src = node_vec[i];
+					graph[i][j].move_cost = 0;
+				}else
+				{
+					graph[i][j].move_cost = 0;
+				}
+				
 			}
 		}
-	}		
+	}
+
+	return graph;		
 }
 
 void show_nodes()
@@ -302,12 +323,6 @@ void show_nodes()
 	marker_pub.publish(marker_vec);  
 }
 
-
-
-
-
-
-
 // A utility function to find the vertex with minimum distance value, from
 // the set of vertices not yet included in shortest path tree
 int minDistance(int dist[], bool sptSet[])
@@ -321,21 +336,55 @@ int minDistance(int dist[], bool sptSet[])
  
    return min_index;
 }
- 
-// A utility function to print the constructed distance array
-int printSolution(int dist[], int n)
-{
-   printf("Vertex   Distance from Source\n");
-   for (int i = 0; i < V; i++)
-      printf("%d \t\t %d\n", i, dist[i]);
+
+
+void show_path()
+{  	
+	visualization_msgs::Marker marker;
+	visualization_msgs::MarkerArray marker_vec;
+
+	int i =0;
+
+	//Marker 
+	marker.header.frame_id = "/map";
+	marker.ns = "path";
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+	marker.pose.orientation.x = 0.0;
+	marker.pose.orientation.y = 0.0;
+	marker.pose.orientation.z = 1.0;
+	marker.pose.orientation.w = 1.0;
+	marker.scale.x = 4;
+	marker.scale.y = 4;
+	marker.scale.z = 0.0;
+	marker.color.a = 1.0; // Don't forget to set the alpha!
+	marker.color.r = 0.0;
+	marker.color.g = 0.0;
+	marker.color.b = 1.0;
+
+   	marker.pose.position.z = 0.0;
+
+	for(i=0; i<path_vec.size(); i++)
+	{
+		marker.header.stamp = ros::Time();
+		marker.id = i;
+		marker.pose.position.x = path_vec[i].y;
+    	marker.pose.position.y = path_vec[i].x;
+
+		marker_vec.markers.push_back(marker);
+	}
+
+	marker_pub.publish(marker_vec);  
 }
- 
+
 // Funtion that implements Dijkstra's single source shortest path algorithm
 // for a graph represented using adjacency matrix representation
-void dijkstra(int **graph, int src)
+void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
 {
      int dist[V];     // The output array.  dist[i] will hold the shortest
                       // distance from src to i
+
+     int parent[V]; // Array to store constructed MST
  
      bool sptSet[V]; // sptSet[i] will true if vertex i is included in shortest
                      // path tree or shortest distance from src to i is finalized
@@ -346,6 +395,7 @@ void dijkstra(int **graph, int src)
  
      // Distance of source vertex from itself is always 0
      dist[src] = 0;
+     parent[src] = -1; // First node is always root of MST 
  
      // Find shortest path for all vertices
      for (int count = 0; count < V-1; count++)
@@ -353,6 +403,7 @@ void dijkstra(int **graph, int src)
        // Pick the minimum distance vertex from the set of vertices not
        // yet processed. u is always equal to src in first iteration.
        int u = minDistance(dist, sptSet);
+       if(u == target) break;
  
        // Mark the picked vertex as processed
        sptSet[u] = true;
@@ -363,31 +414,43 @@ void dijkstra(int **graph, int src)
          // Update dist[v] only if is not in sptSet, there is an edge from 
          // u to v, and total weight of path from src to  v through u is 
          // smaller than current value of dist[v]
-         if (!sptSet[v] && graph[u][v] && dist[u] != INT_MAX 
-                                       && dist[u]+graph[u][v] < dist[v])
-            dist[v] = dist[u] + graph[u][v];
+         if (!sptSet[v] && graph[u][v].move_cost && dist[u] != INT_MAX  && dist[u]+graph[u][v].move_cost < dist[v])
+         {
+         	dist[v] = dist[u] + graph[u][v].move_cost;
+         	parent[v] = u;
+         }
      }
- 
      // print the constructed distance array
-     printSolution(dist, V);
+    // printPath(parent, src, target);
+    
+   	int k = target;
+  	//Store path
+  	// printf("Edge   \n %d ", k);
+	while(k != src)
+	{
+		// printf(" -> %d ", parent[k]);
+
+		path_vec.push_back(graph[k][k].src);
+
+		k = parent[k];
+	}
+	// printf(" \n");
+
+
+	// std::vector<node> path_vec(counter);
+	// while(i != src)
+	// {
+	// 	printf(" -> %d ", parent[i]);
+
+	// 	path_vec.push_back(graph[i][i].src)
+
+	// 	i = parent[i];
+	// 	counter++;
+	// }
+
+	// publish_path();
+	show_path();    
 }
-
-
-
-
-
-
-
-
-
-// void find_path();
-// {
-
-
-
-
-// }
-
 
 
 int main(int argc, char **argv)
@@ -400,9 +463,12 @@ int main(int argc, char **argv)
 	nodes_pub = n.advertise<nav_msgs::GridCells>( "/nodes_generator/valid_nodes", 100);
 	marker_pub = n.advertise<visualization_msgs::MarkerArray>( "visualization_msgs/MarkerArray/nodes", 0);
 
-  	int counter=0;
+	int src = 0;
+  	int target=0;
   	double control_frequency = 10.0;
     ros::Rate loop_rate(control_frequency);
+    std::vector<std::vector<Edge> > graph(node_vec.size(), std::vector<Edge>(node_vec.size()));
+
 
     nodes_generator(); 
     while(ros::ok())
@@ -410,9 +476,11 @@ int main(int argc, char **argv)
     	if(has_data) 
     	{
     		update_nodes();
-    		create_graph();
+    		graph = create_graph();
     		V=node_vec.size();
-    		// find_path();
+			// target = rand() % node_vec.size() + 1;     // v2 in the range 1 to 100
+			target = 30;
+    		find_path(graph, src, target);
     		show_nodes();
     		has_data =false;
     	}
