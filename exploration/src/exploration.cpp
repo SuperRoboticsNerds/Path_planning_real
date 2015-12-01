@@ -27,9 +27,9 @@ struct Edge
 };
 
 //Global 
-int rows = 481; // cm 249;//
-int cols = 241; // cm 245;//
-int num_nodes = 2500; 
+int rows =249;// 481; // cm 249;//
+int cols = 245;//241; // cm 245;//
+int num_nodes = 500; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
@@ -502,7 +502,7 @@ int main(int argc, char **argv)
     		V=node_vec.size();
     		if(new_obs == true)	read_obs();
     		// choose_target();
-    		end_node = 1000;
+    		end_node = 60;
 			//end_node = rand() % node_vec.size();
 			std::cout << "Finding path..."<< std::endl;
     		find_path(graph, src_node, end_node);

@@ -140,7 +140,7 @@ void matrix_function()
         }
     }
     matrix_created=1;
-    //std::cout << "matrix_created:"<< std::endl;
+    std::cout << "matrix_created:"<< std::endl;
     }
 void map_request_function(){
     std_msgs::Bool bool_msg;
@@ -152,7 +152,7 @@ void map_request_function(){
 
 void matrix_to_vector_convert_function(){
 
-    
+    std::cout << "data: ------matrix to vector--------"<< std::endl;
     grid_cost.data.resize(rows*col);
     grid_obs.data.resize(rows*col);
     vec_data.data.resize(rows*col);
@@ -192,7 +192,7 @@ void matrix_to_vector_convert_function(){
 void send_grid_function(){
     //if (grid_cost_map_pub.getNumSubscribers() > 0 )
     //{
-      
+      std::cout << "data: ------send grid--------"<< std::endl;
         
         //costmap_2d::VoxelGrid grid_cost;
         // std::cout << "--------------------------------------------------"<<  std::endl;
@@ -231,6 +231,7 @@ int check_grid_done(){
 
 
 void read_map_2(const localization::Map_message::ConstPtr& msg){
+    std::cout << "data: ------read map func--------"<< std::endl;
     //std::cout << "Inne i funktionen"<<std::endl;
     NUM_WALLS=msg->number_of_walls;
     double walls[NUM_WALLS][4];    
@@ -386,7 +387,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
          add_cost_values_function();
          matrix_to_vector_convert_function();
     }  
-    //std::cout << "data:"<< std::endl;
+    std::cout << "End read map:"<< std::endl;
 }
 
 void add_cost_values_function(){
@@ -405,6 +406,7 @@ void add_cost_values_function(){
 
 void add_cost_weight(int x, int y, int depth){//, int wall_cost_vec[]){
     //std::vector<int> wall_cost_vec = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
+    std::cout << "data: ------add cost weight--------"<< std::endl;
     int wall_cost_vec[] = {93,87,79,72,65,58,51,44,37,30,23,16,9,2,1,1,1};
     if(steps==2){
         int wall_cost_vec[] = {86,72,58,44,30,16,2,1,1};
@@ -459,9 +461,11 @@ void add_cost_weight(int x, int y, int depth){//, int wall_cost_vec[]){
             }
         }   
     }
+    std::cout << "data: ------ad cost weigth end--------"<< std::endl;
 }
 
 void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
+    std::cout << "data: ----object- to grid------"<< std::endl;
     if(matrix_created==0){
         return;
     }
@@ -511,13 +515,14 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
     //     }
     // }
 
-
+std::cout << "data: ---mid-object- to grid------"<< std::endl;
 matrix_to_vector_convert_function();
 send_grid_function();
-
+std::cout << "data: ---end-object- to grid------"<< std::endl;
 }
 
 void current_robot_position_function(localization::Position msg){
+    std::cout << "data: -------position-------"<< std::endl;
     robot_x=msg.x;
     robot_y=msg.y;
     robot_theta=msg.theta;
@@ -611,7 +616,7 @@ int main(int argc, char **argv)
         
 
         if ((grid_generator_node_2.update_matrix_function()==1) && (grid_generator_node_2.check_grid_done()==1)){
-            //std::cout << "data: --------------"<< std::endl; 
+            std::cout << "data: --------------"<< std::endl; 
             grid_generator_node_2.send_grid_function();
         }
 
