@@ -27,8 +27,8 @@ struct Edge
 };
 
 //Global 
-int rows = 249; // cm 481;//
-int cols = 245; // cm 241;//
+int rows = 481; // cm 249;//
+int cols = 241; // cm 245;//
 int num_nodes = 2500; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
@@ -37,10 +37,15 @@ std::vector<node> path_vec;
 ros::Publisher marker_pub;
 ros::Publisher path_pub;
 ros::Subscriber grid_vec;
+ros::Subscriber observed_vec;
 std::vector<float> data_grid;
+std::vector<float> observed_grid;
 std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols));
-bool has_data = false;
+bool new_grid = false;
+bool new_obs = false;
 int V;
+int src_node = 0;
+int end_node=0;
 
 
 void nodes_generator()
@@ -68,7 +73,13 @@ void nodes_generator()
 void read_grid_vect(const std_msgs::Float32MultiArray::ConstPtr &msg)
 {
 	data_grid = msg->data;
-	has_data =true;
+	new_grid =true;
+}
+
+void read_observed_vect(const std_msgs::Float32MultiArray::ConstPtr &msg)
+{
+	observed_grid = msg->data;
+	new_obs =true;
 }
 
 void read_matrix()
@@ -78,6 +89,17 @@ void read_matrix()
         for(int j=0; j<(rows);j++)
         {
             matrix[j][i].weight = (int)data_grid[((rows*i)+j)];
+        } 
+    }
+}
+
+void read_obs()
+{
+	for(int i=0; i<(rows); i++)
+	{
+        for(int j=0; j<(cols);j++)
+        {
+            matrix[j][i].observed = (int)observed_grid[((rows*i)+j)];
         } 
     }
 }
@@ -158,7 +180,8 @@ void publish_path()
 	nav_msgs::GridCells msg;
 	geometry_msgs::Point msg_aux;
 
-	for(int i=0; i<node_vec.size(); i++)
+	std::cout << "Path Size =" << path_vec.size() << std::endl;
+	for(int i=path_vec.size()-1; i>=0; i--)
 	{
 		msg_aux.x = path_vec[i].x;
     	msg_aux.y = path_vec[i].y;
@@ -351,6 +374,7 @@ void show_path()
 
    	marker.pose.position.z = 0.0;
 
+
 	for(i=0; i<path_vec.size(); i++)
 	{
 		marker.header.stamp = ros::Time();
@@ -416,24 +440,32 @@ void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
 	while(k != src)
 	{
 		// printf(" -> %d ", parent[k]);
-		std::cout << "k= " << k << std::endl;
 		path_vec.push_back(graph[k][k].src);
 		k = parent[k];
 	}
 	// printf(" \n");
+}
 
+void choose_target()
+{	
+	// std::vector<int> nonseen_vec;
+	// int k=0;
 
-	// std::vector<node> path_vec(counter);
-	// while(i != src)
+	// for(int i=0; i<node_vec.size(); i++)
 	// {
-	// 	printf(" -> %d ", parent[i]);
+ //        if (node_vec[k].observed == 0)
+ //        {
+ //        	nonseen_vec[k].push_back(k);
+ //        	k++;
+ //        }
+ //    }
 
-	// 	path_vec.push_back(graph[i][i].src)
+	// end_node =nonseen_vec[rand() % nonseen_vec.size()]; //Randomly choose a node from the unseen valid nodes
+}
 
-	// 	i = parent[i];
-	// 	counter++;
-	// }
- 
+void clear_vecs()
+{
+	path_vec.clear();
 }
 
 
@@ -444,20 +476,21 @@ int main(int argc, char **argv)
 
 	//Topics 
 	grid_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_map/to_nodes",100, read_grid_vect);
+	observed_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_map/observed",100, read_observed_vect);
 	path_pub = n.advertise<nav_msgs::GridCells>( "/nodes_generator/path", 100);
 	marker_pub = n.advertise<visualization_msgs::MarkerArray>( "visualization_msgs/MarkerArray/nodes", 1);
 
-	int src = 0;
-  	int target=0;
   	double control_frequency = 10.0;
     ros::Rate loop_rate(control_frequency);
     std::vector<std::vector<Edge> > graph(node_vec.size(), std::vector<Edge>(node_vec.size()));
 
+    src_node = 0;
+    end_node = 0;
 
     nodes_generator(); 
     while(ros::ok())
     {
-    	if(has_data) 
+    	if(new_grid) 
     	{
     		std::cout << "Reading matrix..."<< std::endl;
     		read_matrix();
@@ -467,14 +500,18 @@ int main(int argc, char **argv)
     		std::cout << "Creating graph..."<< std::endl;
     		graph = create_graph();
     		V=node_vec.size();
-			// target = rand() % node_vec.size() + 1;     // v2 in the range 1 to 100
-			target = 1000;
+    		if(new_obs == true)	read_obs();
+    		// choose_target();
+    		end_node = 1000;
+			//end_node = rand() % node_vec.size();
 			std::cout << "Finding path..."<< std::endl;
-    		find_path(graph, src, target);
+    		find_path(graph, src_node, end_node);
     		std::cout << "DONE! Showing path..."<< std::endl;
 			show_path(); 
     		publish_path();
-    		has_data =false;
+    		clear_vecs();
+
+    		new_grid =false;
     	}
 
      	ros::spinOnce();
