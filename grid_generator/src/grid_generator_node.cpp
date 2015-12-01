@@ -21,6 +21,7 @@
 #include "geometry_msgs/PoseArray.h"
 #include "tf/transform_datatypes.h"
 #include "localization/Map_message.h"
+#include "localization/Position.h"
 #include "localization/Distance_message.h"
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -63,6 +64,7 @@ public:
     ros::Publisher map_query_pub;
     ros::Publisher vec_map_pub;
 
+    ros::Subscriber robot_pos_sub_;
     ros::Subscriber object_pos_sub_;
     ros::Subscriber grid_update_request_sub_;
     ros::Subscriber map_subscriber;
@@ -93,7 +95,8 @@ public:
         map_subscriber = n.subscribe<localization::Map_message>("/map_reader/map", 1, &GridGeneratorNode::read_map_2,this);
         object_pos_sub_ = n.subscribe<geometry_msgs::PointStamped>("/object_pos",1,&GridGeneratorNode::add_object_to_grid,this);
         grid_update_request_sub_ = n.subscribe<std_msgs::Int32>("/grid_generator/update_query",1,&GridGeneratorNode::read_map_request_function,this);
-        
+        robot_pos_sub_ = n.subscribe<localization::Position>("/position",1,&GridGeneratorNode::current_robot_position_function,this);
+
         //grid_cost_map_pub = n.advertise<std::vector< std::vector<struct position_node> >("test",1);
         //twist_sub_ = n.subscribe<geometry_msgs::Twist>("/motor_controller/twist",1,&MotorcontrollerNode::twist_function,this);
         //pwm_pub_ = n.advertise<ras_arduino_msgs::PWM>("/kobuki/pwm", 1000);
@@ -314,6 +317,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
                 for (double xTemp = floor(xStart); xTemp < floor(xEnd); xTemp=xTemp+1 ){//every point with one centimeters differnce.
                     //std::cout << "i loopen, xTemp: "<< xTemp  << std::endl;
                     matrix_a[xTemp][floor(y)].weight=100;
+                    matrix_a[xTemp][floor(y)].observed=1;
                     //std::cout << "i loopen mid, xTemp: "<< xTemp  << std::endl;
                     // if(i<6){
                     //     std::cout << "("<<xTemp<<", "<< floor(y) <<")" << std::endl;   
@@ -336,6 +340,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
                 for (double xTemp = floor(xStart); xTemp < floor(xEnd); xTemp=xTemp+1 ){//every point with one centimeters differnce.
                     
                     matrix_a[xTemp][floor(y)].weight=100;
+                    matrix_a[xTemp][floor(y)].observed=1;
                     // if(i<6){
                     //     std::cout << "("<<xTemp<<", "<< floor(y) <<")" << std::endl;   
                     // }
@@ -369,6 +374,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
 
             for (double yTemp = floor(yStart); yTemp < floor(yEnd); yTemp=yTemp+1 ){
                 matrix_a[xSamePos][yTemp].weight=100;
+                matrix_a[xSamePos][yTemp].observed=1;
                 //std::cout << "("<<xSamePos<<", "<< yTemp <<")" << std::endl;
             }
         }
@@ -507,6 +513,26 @@ send_grid_function();
 
 }
 
+void current_robot_position_function(localization::Position msg){
+    robot_x=msg.x;
+    robot_y=msg.y;
+    robot_theta=msg.theta;
+
+    for(int i =(int)floor(robot_x); i<=(int)floor(robot_x+50); i++){
+        for(int j = floor(robot_y-i); j <= floor(robot_y+i); j++){
+            x_observed=(int)floor(i*cos(robot_theta));
+            y_observed=(int)floor(j*sin(robot_theta));
+            matrix_a[x_observed][y_observed].observed = 1;
+            grid_obs.data[((rows*x_observed)+y_observed)]=1;
+
+        }
+    }
+
+    grid_obs.header.frame_id = "/map";
+    grid_obs.header.stamp = ros::Time::now();
+    grid_obs_map_pub.publish(grid_obs);
+}
+
 
 private:
  int rows;
@@ -526,6 +552,9 @@ private:
  int length_y_wall;
  int matrix_created;
 
+ int x_observed;
+ int y_observed;
+
  double xStart;
  double xEnd;
  double xStep;
@@ -537,6 +566,10 @@ private:
  double x;
  double y;
  
+double robot_x;
+double robot_y;
+double robot_theta;
+
 
 
 };
