@@ -52,6 +52,7 @@ public:
     std::vector< std::vector<grid_generator::Grid_map_struct> > matrix_a;
     std::vector<grid_generator::Grid_map_struct> grid_map_send;
     std_msgs::Float32MultiArray vec_data;
+    std_msgs::Float32MultiArray observed_data;
     nav_msgs::OccupancyGrid grid_cost;
     nav_msgs::OccupancyGrid grid_obs;
 
@@ -63,6 +64,7 @@ public:
     ros::Publisher grid_obs_map_pub;
     ros::Publisher map_query_pub;
     ros::Publisher vec_map_pub;
+    ros::Publisher observed_data_pub;
 
     ros::Subscriber robot_pos_sub_;
     ros::Subscriber object_pos_sub_;
@@ -90,6 +92,7 @@ public:
         grid_cost_map_pub = n.advertise<nav_msgs::OccupancyGrid>("/grid_map/cost_to_rviz", 100);
         grid_obs_map_pub = n.advertise<nav_msgs::OccupancyGrid>("/grid_map/obs_to_rviz", 100);
         vec_map_pub = n.advertise<std_msgs::Float32MultiArray>("/grid_map/to_nodes", 100);
+        observed_data_pub = n.advertise<std_msgs::Float32MultiArray>("/grid_map/observed", 100);
         map_query_pub = n.advertise<std_msgs::Bool>("/map_reader/query", 100);
         
         map_subscriber = n.subscribe<localization::Map_message>("/map_reader/map", 1, &GridGeneratorNode::read_map_2,this);
@@ -153,6 +156,7 @@ void matrix_to_vector_convert_function(){
     grid_cost.data.resize(rows*col);
     grid_obs.data.resize(rows*col);
     vec_data.data.resize(rows*col);
+    observed_data.data.resize(rows*col);
     grid_cost.info.origin.position.x =0.0;
     grid_cost.info.origin.position.y =0.0,
     grid_cost.info.origin.position.z =0.0;
@@ -524,6 +528,7 @@ void current_robot_position_function(localization::Position msg){
             y_observed=(int)floor(j*sin(robot_theta));
             matrix_a[x_observed][y_observed].observed = 1;
             grid_obs.data[((rows*x_observed)+y_observed)]=1;
+            observed_data.data[((rows*x_observed)+y_observed)]=1;
 
         }
     }
@@ -531,6 +536,7 @@ void current_robot_position_function(localization::Position msg){
     grid_obs.header.frame_id = "/map";
     grid_obs.header.stamp = ros::Time::now();
     grid_obs_map_pub.publish(grid_obs);
+    observed_data_pub.publish(observed_data);
 }
 
 
