@@ -27,9 +27,9 @@ struct Edge
 };
 
 //Global 
-int rows = 249; // cm
-int cols = 245; // cm
-int num_nodes = 500; 
+int rows = 249; // cm 481;//
+int cols = 245; // cm 241;//
+int num_nodes = 2500; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
@@ -73,11 +73,11 @@ void read_grid_vect(const std_msgs::Float32MultiArray::ConstPtr &msg)
 
 void read_matrix()
 {
-	for(int i=0; i<(rows); i++)
+	for(int i=0; i<(cols); i++)
 	{
-        for(int j=0; j<(cols);j++)
+        for(int j=0; j<(rows);j++)
         {
-            matrix[i][j].weight = (int)data_grid[((rows*i -1)+j)];
+            matrix[j][i].weight = (int)data_grid[((rows*i)+j)];
         } 
     }
 }
@@ -301,8 +301,8 @@ void show_nodes()
 	{
 		marker.header.stamp = ros::Time();
 		marker.id = i;
-		marker.pose.position.x = node_vec[i].y;
-    	marker.pose.position.y = node_vec[i].x;
+		marker.pose.position.x = node_vec[i].x;
+    	marker.pose.position.y = node_vec[i].y;
 
 		marker_vec.markers.push_back(marker);
 	}
@@ -355,8 +355,8 @@ void show_path()
 	{
 		marker.header.stamp = ros::Time();
 		marker.id = i;
-		marker.pose.position.x = path_vec[i].y;
-    	marker.pose.position.y = path_vec[i].x;
+		marker.pose.position.x = path_vec[i].x;
+    	marker.pose.position.y = path_vec[i].y;
 
 		marker_vec.markers.push_back(marker);
 	}
@@ -468,7 +468,7 @@ int main(int argc, char **argv)
     		graph = create_graph();
     		V=node_vec.size();
 			// target = rand() % node_vec.size() + 1;     // v2 in the range 1 to 100
-			target = 30;
+			target = 1000;
 			std::cout << "Finding path..."<< std::endl;
     		find_path(graph, src, target);
     		std::cout << "DONE! Showing path..."<< std::endl;
