@@ -17,6 +17,7 @@ struct node
 	int y;
 	int weight;
 	int observed;
+	int unseen_square;
 };
 
 struct Edge
@@ -27,8 +28,8 @@ struct Edge
 };
 
 //Global 
-int rows =249;// 481; // cm 249;//
-int cols = 245;//241; // cm 245;//
+int rows =249;// 481; // cm 
+int cols = 245;//241; // cm 
 int num_nodes = 500; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
@@ -64,6 +65,7 @@ void nodes_generator()
 				node_vec[k].y = j;
 				node_vec[k].weight = 0;
 				node_vec[k].observed = 0;
+				node_vec[k].unseen_square = 0;
 				k++;
 			}
 		}
@@ -157,6 +159,7 @@ void update_nodes()
 	int k=0;
 	int sum =0;
 	int erasenum = 0;
+	int square_size = 100; //= 1m²
 
 	for(k=0; k<node_vec.size(); k++)
 	{
@@ -170,6 +173,48 @@ void update_nodes()
 		{
 			node_vec[k].weight = sum;
 		}		 
+	}
+
+	int i = 0;
+	int j = 0;
+
+	// Num of unseen squares around the node
+	for(int k=0; k < node_vec.size(); k++)
+	{
+		sum = 0;
+		for(i=node_vec[k].x ; i < (node_vec[k].x + square_size/2); i++)
+		{
+			for(j=node_vec[k].y ; j < (node_vec[k].y +square_size/2); j++)
+			{
+				if(i<0 || j<0 || i>(rows-1) || j>(cols-1)) break;
+				if(matrix[i][j].weight == 100) break;
+				if(matrix[i][j].observed == 0)   sum++;
+			}
+			for(j=node_vec[k].y - 1; j >(node_vec[k].y - square_size/2); j--)
+			{
+				if(i<0 || j<0 || i>(rows-1) || j>(cols-1)) break;
+				if(matrix[i][j].weight == 100) break;
+				if(matrix[i][j].observed == 0)   sum++;
+			}
+		}
+		for(i=node_vec[k].x - 1 ; i >(node_vec[k].x - square_size/2); i--)
+		{
+			for(j=node_vec[k].y; j<(node_vec[k].y + square_size/2); j++)
+			{
+				if(i<0 || j<0 || i>(rows-1) || j>(cols-1)) break;
+				if(matrix[i][j].weight == 100) break;
+				if(matrix[i][j].observed == 0)   sum++;
+			}
+			for(j=node_vec[k].y - 1; j > (node_vec[k].y - square_size/2); j--)
+			{
+				if(i<0 || j<0 || i>(rows-1) || j>(cols-1)) break;
+				if(matrix[i][j].weight == 100) break;
+				if(matrix[i][j].observed == 0)   sum++;
+			}
+		}
+
+		node_vec[k].unseen_square = sum;
+		// std::cout << "Node(" << k <<"): square cost = " << node_vec[k].unseen_square << std::endl;
 	}
 
 }
@@ -197,7 +242,6 @@ void publish_path()
 {
 	int smallest;
 	int biggest;
-	int step=robot_width/4; //5 lines
 
 	if(n1.y == n2.y && n1.x == n2.x) return false;
 
@@ -215,7 +259,11 @@ void publish_path()
 
 		for(int i = smallest; i<biggest; i++ )
 		{
-			if(matrix[i][n1.y-2*step].weight==100 || matrix[i][n1.y-step].weight==100 || matrix[i][n1.y].weight==100 || matrix[i][n1.y+step].weight==100 || matrix[i][n1.y+2*step].weight ==100)
+			if(	   matrix[i][n1.y-12].weight==100 || matrix[i][n1.y-9].weight==100 
+				|| matrix[i][n1.y-6].weight==100 || matrix[i][n1.y-3].weight==100
+				|| matrix[i][n1.y].weight==100 
+				|| matrix[i][n1.y+6].weight==100 || matrix[i][n1.y+3].weight==100
+				|| matrix[i][n1.y+12].weight==100 || matrix[i][n1.y+9].weight==100)
 			{
 				return false;
 			}
@@ -237,7 +285,11 @@ void publish_path()
 
 		for(int j = smallest; j<biggest; j++ )
 		{
-			if(matrix[n1.x-2*step][j].weight==100 || matrix[n1.x-step][j].weight==100 || matrix[n1.x][j].weight==100 || matrix[n1.x+step][j].weight==100 || matrix[n1.x+2*step][j].weight==100)
+			if(    matrix[n1.x-12][j].weight==100 || matrix[n1.x-9][j].weight==100 
+				|| matrix[n1.x-6][j].weight==100 || matrix[n1.x-3][j].weight==100
+				|| matrix[n1.x][j].weight==100 
+				|| matrix[n1.x+6][j].weight==100 || matrix[n1.x+3][j].weight==100
+				|| matrix[n1.x+12][j].weight==100 || matrix[n1.x+9][j].weight==100)
 			{
 				return false;
 			}
@@ -250,11 +302,10 @@ void publish_path()
 int movement_cost(node src, node dest)
 {
 	int heuristic = abs(src.x - dest.x) + abs(src.y - dest.y);
-	int cost_move = 10000;
 	int total=0;
 
 
-	total= heuristic;// + cost_move + src.weight;
+	total= heuristic + dest.weight;
 
 	return total;
 }
@@ -448,19 +499,36 @@ void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
 
 void choose_target()
 {	
-	// std::vector<int> nonseen_vec;
-	// int k=0;
+	std::vector<int> nonseen_vec;
+	int k=0;
+
+	//Randomly choose a node from the unseen valid nodes
 
 	// for(int i=0; i<node_vec.size(); i++)
 	// {
- //        if (node_vec[k].observed == 0)
+ //        if (node_vec[i].observed == 0)
  //        {
- //        	nonseen_vec[k].push_back(k);
+ //        	nonseen_vec.push_back(i);
  //        	k++;
  //        }
  //    }
 
-	// end_node =nonseen_vec[rand() % nonseen_vec.size()]; //Randomly choose a node from the unseen valid nodes
+	// end_node =nonseen_vec[rand() % nonseen_vec.size()]; 
+
+	int biggest_square = 0;
+	int big_index = 0;
+	for(int i=0; i<node_vec.size(); i++)
+	{
+        if (node_vec[i].unseen_square > biggest_square)
+        {
+        	biggest_square = node_vec[i].unseen_square;
+        	big_index = i;
+        	// std::cout << "biggest_square = " << biggest_square << "  index = " << big_index << std::endl;
+        }
+    }
+
+	end_node = big_index; 
+
 }
 
 void clear_vecs()
@@ -494,16 +562,18 @@ int main(int argc, char **argv)
     	{
     		std::cout << "Reading matrix..."<< std::endl;
     		read_matrix();
+    		if(new_obs == true)	
+    		{
+    			read_obs();
+    			new_obs = false;
+    		}
     		std::cout << "Updating nodes..."<< std::endl;
     		update_nodes();
     		show_nodes();
     		std::cout << "Creating graph..."<< std::endl;
     		graph = create_graph();
     		V=node_vec.size();
-    		if(new_obs == true)	read_obs();
-    		// choose_target();
-    		end_node = 60;
-			//end_node = rand() % node_vec.size();
+    		choose_target();
 			std::cout << "Finding path..."<< std::endl;
     		find_path(graph, src_node, end_node);
     		std::cout << "DONE! Showing path..."<< std::endl;
