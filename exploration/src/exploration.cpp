@@ -9,6 +9,7 @@
 #include <geometry_msgs/Point.h>
 #include <stdio.h>
 #include <limits.h>
+#include <localization/Position.h>
 
 
 struct node
@@ -35,8 +36,10 @@ int robot_width=24; //odd number
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
 std::vector<node> path_vec;
-ros::Publisher marker_pub;
+ros::Publisher marker_valid_pub;
+ros::Publisher marker_path_pub ;
 ros::Publisher path_pub;
+ros::Subscriber robot_pos_sub_;
 ros::Subscriber grid_vec;
 ros::Subscriber observed_vec;
 std::vector<float> data_grid;
@@ -48,6 +51,9 @@ bool end = false;
 int V;
 int src_node = 0;
 int end_node=0;
+int robot_x;
+int robot_y;
+
 
 
 void nodes_generator()
@@ -229,9 +235,9 @@ void publish_path()
 	std::cout << "Path Size =" << path_vec.size() << std::endl;
 	for(int i=path_vec.size()-1; i>=0; i--)
 	{
-		msg_aux.x = path_vec[i].x;
-    	msg_aux.y = path_vec[i].y;
-    	msg_aux.z = 0;
+		msg_aux.x = path_vec[i].x/100.0;
+    	msg_aux.y = path_vec[i].y/100.0;
+    	msg_aux.z = 0.0;
 
 		msg.cells.push_back(msg_aux);
 	} 
@@ -362,8 +368,8 @@ void show_nodes()
 	marker.pose.orientation.y = 0.0;
 	marker.pose.orientation.z = 1.0;
 	marker.pose.orientation.w = 1.0;
-	marker.scale.x = 1;
-	marker.scale.y = 1;
+	marker.scale.x = 0.01;
+	marker.scale.y = 0.01;
 	marker.scale.z = 0.0;
 	marker.color.a = 1.0; // Don't forget to set the alpha!
 	marker.color.r = 1.0;
@@ -372,17 +378,25 @@ void show_nodes()
 
    	marker.pose.position.z = 0.0;
 
-	for(i=0; i<node_vec.size(); i++)
+
+
+	for(i=0; i<num_nodes; i++)
 	{
+		if (i<node_vec.size())
+		{
+			marker.pose.position.x = node_vec[i].x/100.0;
+    		marker.pose.position.y = node_vec[i].y/100.0;
+    		marker.color.a = 1.0;
+		}else
+		{
+			marker.color.a = 0.0;
+		}
 		marker.header.stamp = ros::Time();
 		marker.id = i;
-		marker.pose.position.x = node_vec[i].x;
-    	marker.pose.position.y = node_vec[i].y;
-
 		marker_vec.markers.push_back(marker);
 	}
 
-	marker_pub.publish(marker_vec);  
+	marker_valid_pub.publish(marker_vec);  
 }
 
 // A utility function to find the vertex with minimum distance value, from
@@ -416,8 +430,8 @@ void show_path()
 	marker.pose.orientation.y = 0.0;
 	marker.pose.orientation.z = 1.0;
 	marker.pose.orientation.w = 1.0;
-	marker.scale.x = 4;
-	marker.scale.y = 4;
+	marker.scale.x = 0.04;
+	marker.scale.y = 0.04;
 	marker.scale.z = 0.0;
 	marker.color.a = 1.0; // Don't forget to set the alpha!
 	marker.color.r = 0.0;
@@ -426,18 +440,23 @@ void show_path()
 
    	marker.pose.position.z = 0.0;
 
-
-	for(i=0; i<path_vec.size(); i++)
+   	for(i=0; i<num_nodes; i++)
 	{
+		if (i<path_vec.size())
+		{
+			marker.pose.position.x = path_vec[i].x/100.0;
+    		marker.pose.position.y = path_vec[i].y/100.0;
+    		marker.color.a = 1.0;
+		}else
+		{
+			marker.color.a = 0.0;
+		}
 		marker.header.stamp = ros::Time();
 		marker.id = i;
-		marker.pose.position.x = path_vec[i].x;
-    	marker.pose.position.y = path_vec[i].y;
-
 		marker_vec.markers.push_back(marker);
 	}
 
-	marker_pub.publish(marker_vec);  
+	marker_path_pub.publish(marker_vec);  
 }
 
 // Funtion that implements Dijkstra's single source shortest path algorithm
@@ -542,6 +561,31 @@ void clear_vecs()
 	path_vec.clear();
 }
 
+void current_robot_position_function(localization::Position msg){
+    //std::cout << "data: -------position-------"<< std::endl;
+
+    robot_x=(int)floor(msg.x*100.0);
+    robot_y=(int)floor(msg.y*100.0);
+}
+
+void choose_closest_node()
+{
+	double dist=100000.0;
+	int src_temp = 0;
+ 
+	for(int i=0; i<node_vec.size(); i++)
+	{
+		if(sqrt((robot_x - node_vec[i].x)*(robot_x - node_vec[i].x)+(robot_y - node_vec[i].y)*(robot_y - node_vec[i].y))<dist)
+		{
+			dist = sqrt((robot_x - node_vec[i].x)*(robot_x - node_vec[i].x)+(robot_y - node_vec[i].y)*(robot_y - node_vec[i].y));
+			src_temp = i;
+		}
+    }
+
+    src_node = src_temp;
+}
+
+
 
 int main(int argc, char **argv)
 {	
@@ -551,8 +595,13 @@ int main(int argc, char **argv)
 	//Topics 
 	grid_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_map/to_nodes",100, read_grid_vect);
 	observed_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_map/observed",100, read_observed_vect);
+	robot_pos_sub_ = n.subscribe<localization::Position>("/position",100,current_robot_position_function);
+
 	path_pub = n.advertise<nav_msgs::GridCells>( "/nodes_generator/path", 100);
-	marker_pub = n.advertise<visualization_msgs::MarkerArray>( "visualization_msgs/MarkerArray/nodes", 1);
+	marker_valid_pub = n.advertise<visualization_msgs::MarkerArray>( "/valid_nodes", 1);
+	marker_path_pub = n.advertise<visualization_msgs::MarkerArray>( "/path_nodes", 1);
+	
+
 	// receive msg to get out of the maze !!!
 
   	double control_frequency = 10.0;
@@ -580,6 +629,7 @@ int main(int argc, char **argv)
     		std::cout << "Creating graph..."<< std::endl;
     		graph = create_graph();
     		V=node_vec.size();
+    		choose_closest_node();
     		if(!end) choose_target();
     		else end_node = 0;
 			std::cout << "Finding path..."<< std::endl;
