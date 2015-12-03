@@ -30,7 +30,7 @@ struct Edge
 //Global 
 int rows =249;// 481; // cm 
 int cols = 245;//241; // cm 
-int num_nodes = 500; 
+int num_nodes = 2500; 
 int robot_width=24; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
@@ -44,6 +44,7 @@ std::vector<float> observed_grid;
 std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols));
 bool new_grid = false;
 bool new_obs = false;
+bool end = false;
 int V;
 int src_node = 0;
 int end_node=0;
@@ -55,9 +56,9 @@ void nodes_generator()
 	int j=0;
 	int k=0;
 
-	for(i=0; i < rows; i=i+(int)round(rows/sqrt(num_nodes)))
+	for(i=0; i < rows; i=i+(int)round(rows/(sqrt(num_nodes)-1)))
 	{
-		for(j=0; j < cols; j=j+(int)round(cols/sqrt(num_nodes)))
+		for(j=0; j < cols; j=j+(int)round(cols/(sqrt(num_nodes)-1)))
 		{
 			if(i< rows && j < cols && k < node_vec.size())
 			{
@@ -305,7 +306,7 @@ int movement_cost(node src, node dest)
 	int total=0;
 
 
-	total= heuristic + dest.weight;
+	total= 20*heuristic + dest.weight;
 
 	return total;
 }
@@ -493,6 +494,11 @@ void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
 		// printf(" -> %d ", parent[k]);
 		path_vec.push_back(graph[k][k].src);
 		k = parent[k];
+		if(k > (V-1)) 
+		{
+			std::cout << "ERROR: There is no possible path with this number of nodes"<< std::endl;
+			break;
+		}
 	}
 	// printf(" \n");
 }
@@ -547,6 +553,7 @@ int main(int argc, char **argv)
 	observed_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_map/observed",100, read_observed_vect);
 	path_pub = n.advertise<nav_msgs::GridCells>( "/nodes_generator/path", 100);
 	marker_pub = n.advertise<visualization_msgs::MarkerArray>( "visualization_msgs/MarkerArray/nodes", 1);
+	// receive msg to get out of the maze !!!
 
   	double control_frequency = 10.0;
     ros::Rate loop_rate(control_frequency);
@@ -573,7 +580,8 @@ int main(int argc, char **argv)
     		std::cout << "Creating graph..."<< std::endl;
     		graph = create_graph();
     		V=node_vec.size();
-    		choose_target();
+    		if(!end) choose_target();
+    		else end_node = 0;
 			std::cout << "Finding path..."<< std::endl;
     		find_path(graph, src_node, end_node);
     		std::cout << "DONE! Showing path..."<< std::endl;
