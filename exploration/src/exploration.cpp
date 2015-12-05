@@ -266,11 +266,11 @@ void publish_path()
 
 		for(int i = smallest; i<biggest; i++ )
 		{
-			if(	   matrix[i][n1.y-12].weight==100 || matrix[i][n1.y-9].weight==100 
+			if(	 matrix[i][n1.y-14].weight==100   || matrix[i][n1.y-12].weight==100 || matrix[i][n1.y-9].weight==100 
 				|| matrix[i][n1.y-6].weight==100 || matrix[i][n1.y-3].weight==100
 				|| matrix[i][n1.y].weight==100 
 				|| matrix[i][n1.y+6].weight==100 || matrix[i][n1.y+3].weight==100
-				|| matrix[i][n1.y+12].weight==100 || matrix[i][n1.y+9].weight==100)
+				|| matrix[i][n1.y+12].weight==100 || matrix[i][n1.y+9].weight==100 || matrix[i][n1.y+14].weight==100 )
 			{
 				return false;
 			}
@@ -629,7 +629,9 @@ int main(int argc, char **argv)
     		std::cout << "Creating graph..."<< std::endl;
     		graph = create_graph();
     		V=node_vec.size();
+    		std::cout << "Choosing source..."<< std::endl;
     		choose_closest_node();
+    		std::cout << "Choosing target..."<< std::endl;
     		if(!end) choose_target();
     		else end_node = 0;
 			std::cout << "Finding path..."<< std::endl;

@@ -531,7 +531,7 @@ void current_robot_position_function(localization::Position msg){
         for(int j = floor(robot_y-i); j <= floor(robot_y+i); j++){
             x_observed=(int)floor(i*cos(robot_theta));
             y_observed=(int)floor(j*sin(robot_theta));
-            if(!((x_observed<=0) ||(x_observed>(rows-1))||(y_observed<=0)||(y_observed>(col-1)))){
+            if(!((x_observed<=0) ||(x_observed>(col-1))||(y_observed<=0)||(y_observed>(rows-1)))){
                 matrix_a[x_observed][y_observed].observed = 1;
                 grid_obs.data[((rows*x_observed)+y_observed)]=1;
                 observed_data.data[((rows*x_observed)+y_observed)]=1;
