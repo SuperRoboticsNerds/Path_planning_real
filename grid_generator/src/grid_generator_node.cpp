@@ -169,8 +169,8 @@ void matrix_to_vector_convert_function(){
     grid_obs.info.origin.position.y =0.0,
     grid_obs.info.origin.position.z =0.0;
     grid_obs.info.origin.orientation.w = 1.0;
-    grid_obs.info.width = rows/100;
-    grid_obs.info.height = col/100;
+    grid_obs.info.width = rows;
+    grid_obs.info.height = col;
     grid_obs.info.resolution = (0.01*steps);
 
 
@@ -527,23 +527,23 @@ void current_robot_position_function(localization::Position msg){
     robot_y=msg.y*100.0;
     robot_theta=msg.theta;
 
-    for(int i =(int)floor(robot_x); i<=(int)floor(robot_x+50); i++){
-        for(int j = floor(robot_y-i); j <= floor(robot_y+i); j++){
-            x_observed=(int)floor(i*cos(robot_theta));
-            y_observed=(int)floor(j*sin(robot_theta));
-            if(!((x_observed<=0) ||(x_observed>(col-1))||(y_observed<=0)||(y_observed>(rows-1)))){
-                matrix_a[x_observed][y_observed].observed = 1;
-                grid_obs.data[((rows*x_observed)+y_observed)]=1;
-                observed_data.data[((rows*x_observed)+y_observed)]=1;
-            }
+    // for(int i =(int)floor(robot_x); i<=(int)floor(robot_x+30); i++){
+    //     for(int j = floor(robot_y-i); j <= floor(robot_y+i); j++){
+    //         x_observed=(int)floor(i*cos(robot_theta));
+    //         y_observed=(int)floor(j*sin(robot_theta));
+    //         if(!((x_observed<=0) ||(x_observed>(col-1))||(y_observed<=0)||(y_observed>(rows-1)))){
+    //             matrix_a[x_observed][y_observed].observed = 1;
+    //             grid_obs.data[((rows*y_observed)+x_observed)]=1;
+    //             observed_data.data[((rows*y_observed)+x_observed)]=1;
+    //         }
 
-        }
-    }
+    //     }
+    // }
 
-    grid_obs.header.frame_id = "/map";
-    grid_obs.header.stamp = ros::Time::now();
-    grid_obs_map_pub.publish(grid_obs);
-    observed_data_pub.publish(observed_data);
+    // grid_obs.header.frame_id = "/map";
+    // grid_obs.header.stamp = ros::Time::now();
+    // grid_obs_map_pub.publish(grid_obs);
+    // observed_data_pub.publish(observed_data);
 }
 
 
