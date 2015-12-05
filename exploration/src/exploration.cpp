@@ -32,7 +32,7 @@ struct Edge
 int rows =249;// 481; // cm 
 int cols = 245;//241; // cm 
 int num_nodes = 2500; 
-int robot_width=24; //odd number 
+int robot_width=28; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
 std::vector<node> node_vec(num_nodes);
 std::vector<node> path_vec;
@@ -292,11 +292,11 @@ void publish_path()
 
 		for(int j = smallest; j<biggest; j++ )
 		{
-			if(    matrix[n1.x-12][j].weight==100 || matrix[n1.x-9][j].weight==100 
+			if(  matrix[n1.x-14][j].weight==100  || matrix[n1.x-12][j].weight==100 || matrix[n1.x-9][j].weight==100 
 				|| matrix[n1.x-6][j].weight==100 || matrix[n1.x-3][j].weight==100
 				|| matrix[n1.x][j].weight==100 
 				|| matrix[n1.x+6][j].weight==100 || matrix[n1.x+3][j].weight==100
-				|| matrix[n1.x+12][j].weight==100 || matrix[n1.x+9][j].weight==100)
+				|| matrix[n1.x+12][j].weight==100 || matrix[n1.x+9][j].weight==100  || matrix[n1.x+14][j].weight==100 )
 			{
 				return false;
 			}
