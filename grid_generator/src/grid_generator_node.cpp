@@ -79,6 +79,7 @@ public:
         grid_update_query=1;
         matrix_created=0;
         steps=1;
+        obs_grid_done = 0;
         // rows=300; 
         // col=300;
         
@@ -127,7 +128,7 @@ void matrix_function()
             //Grow Columns by n
             matrix_a[i].resize(col);
         }
-        std::cout << "matix: " << matrix_a.size() << '\n';
+      //  std::cout << "matix: " << matrix_a.size() << '\n';
 
  
 
@@ -152,7 +153,7 @@ void map_request_function(){
 
 void matrix_to_vector_convert_function(){
 
-    std::cout << "data: ------matrix to vector--------"<< std::endl;
+   // std::cout << "data: ------matrix to vector--------"<< std::endl;
     grid_cost.data.resize(rows*col);
     grid_obs.data.resize(rows*col);
     vec_data.data.resize(rows*col);
@@ -186,13 +187,14 @@ void matrix_to_vector_convert_function(){
     // std::cout << "plats 259: "<< matrix_a[248][5].weight<< std::endl; 
     // std::cout << "plats 258: "<< matrix_a[247][5].weight<< std::endl; 
     // std::cout << "plats 1: "<< matrix_a[1][5].weight<< std::endl;  
-    // std::cout << "plats 0: "<< matrix_a[0][5].weight<< std::endl;     
+    // std::cout << "plats 0: "<< matrix_a[0][5].weight<< std::endl;    
+    obs_grid_done=1; 
 }
 
 void send_grid_function(){
     //if (grid_cost_map_pub.getNumSubscribers() > 0 )
     //{
-      std::cout << "data: ------send grid--------"<< std::endl;
+      //std::cout << "data: ------send grid--------"<< std::endl;
         
         //costmap_2d::VoxelGrid grid_cost;
         // std::cout << "--------------------------------------------------"<<  std::endl;
@@ -241,7 +243,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
      int y_wall_min=0;
      int y_wall_max=0;
 
-    std::cout << "read_map_2 : "<< std::endl;
+   // std::cout << "read_map_2 : "<< std::endl;
     for(int i=0;i<NUM_WALLS;i++){
         walls[i][0] = msg->points[i*4];
         walls[i][1] = msg->points[i*4+1];
@@ -387,7 +389,7 @@ void read_map_2(const localization::Map_message::ConstPtr& msg){
          add_cost_values_function();
          matrix_to_vector_convert_function();
     }  
-    std::cout << "End read map:"<< std::endl;
+    //std::cout << "End read map:"<< std::endl;
 }
 
 void add_cost_values_function(){
@@ -406,7 +408,7 @@ void add_cost_values_function(){
 
 void add_cost_weight(int x, int y, int depth){//, int wall_cost_vec[]){
     //std::vector<int> wall_cost_vec = {99,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5};
-    std::cout << "data: ------add cost weight--------"<< std::endl;
+    //std::cout << "data: ------add cost weight--------"<< std::endl;
     int wall_cost_vec[] = {93,87,79,72,65,58,51,44,37,30,23,16,9,2,1,1,1};
     if(steps==2){
         int wall_cost_vec[] = {86,72,58,44,30,16,2,1,1};
@@ -461,7 +463,7 @@ void add_cost_weight(int x, int y, int depth){//, int wall_cost_vec[]){
             }
         }   
     }
-    std::cout << "data: ------ad cost weigth end--------"<< std::endl;
+    //std::cout << "data: ------ad cost weigth end--------"<< std::endl;
 }
 
 void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
@@ -469,7 +471,7 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
     if(matrix_created==0){
         return;
     }
-    std::cout << "data:"<< std::endl;
+   // std::cout << "data:"<< std::endl;
     // int object_cost_vec[] = {99,90,80,70,60,50,40,30,20,10};
     // if(steps==2){
     //     int wall_cost_vec[] = {99,95,70,50,35,20,10};
@@ -480,8 +482,8 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
     point_out=msg->point;
 
     
-    int x = (int)floor(point_out.x)/steps;
-    int y = (int)floor(point_out.y)/steps;
+    int x = (int)floor(point_out.x*100.0)/steps;
+    int y = (int)floor(point_out.y*100.0)/steps;
 
     int obj_width = object_radius;
 
@@ -493,7 +495,7 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
                         for(int i=(x-obj_width);i<=(x+obj_width);i++){
                             for(int j=(y-obj_width);j<=(y+obj_width);j++){
                                 //std::cout << "x: "<< x << ", y: "<< y<< std::endl;
-                                matrix_a[(i)][(j)].weight=99;
+                                matrix_a[(i)][(j)].weight=100;
                                 add_cost_weight(i,j,cost_steps);
                             }
                         }
@@ -515,10 +517,10 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
     //     }
     // }
 
-std::cout << "data: ---mid-object- to grid------"<< std::endl;
+//std::cout << "data: ---mid-object- to grid------"<< std::endl;
 matrix_to_vector_convert_function();
 send_grid_function();
-std::cout << "data: ---end-object- to grid------"<< std::endl;
+//std::cout << "data: ---end-object- to grid------"<< std::endl;
 }
 
 void current_robot_position_function(localization::Position msg){
@@ -527,23 +529,30 @@ void current_robot_position_function(localization::Position msg){
     robot_y=msg.y*100.0;
     robot_theta=msg.theta;
 
-    // for(int i =(int)floor(robot_x); i<=(int)floor(robot_x+30); i++){
-    //     for(int j = floor(robot_y-i); j <= floor(robot_y+i); j++){
-    //         x_observed=(int)floor(i*cos(robot_theta));
-    //         y_observed=(int)floor(j*sin(robot_theta));
-    //         if(!((x_observed<=0) ||(x_observed>(col-1))||(y_observed<=0)||(y_observed>(rows-1)))){
-    //             matrix_a[x_observed][y_observed].observed = 1;
-    //             grid_obs.data[((rows*y_observed)+x_observed)]=1;
-    //             observed_data.data[((rows*y_observed)+x_observed)]=1;
-    //         }
 
-    //     }
-    // }
 
-    // grid_obs.header.frame_id = "/map";
-    // grid_obs.header.stamp = ros::Time::now();
-    // grid_obs_map_pub.publish(grid_obs);
-    // observed_data_pub.publish(observed_data);
+    if ((matrix_created==1) && (obs_grid_done==1)){
+        for(int i =0; i<=30; i++){
+            for(int j = -i; j <= i; j++){
+
+                x_observed=(int)floor(robot_x+i*cos(robot_theta)-j*sin(robot_theta)); 
+                y_observed=(int)floor(robot_y+i*sin(robot_theta)+j*cos(robot_theta));
+
+                if(((x_observed>1) && (x_observed<(col-2))&& (y_observed>1)&&(y_observed<(rows-2)))){
+                    matrix_a[x_observed][y_observed].observed = 100;
+                    grid_obs.data[((rows*y_observed)+x_observed)]=100;
+                    observed_data.data[((rows*y_observed)+x_observed)]=100;
+                }
+            }
+        }
+       
+     grid_obs.header.frame_id = "/map";
+     grid_obs.header.stamp = ros::Time::now();
+     grid_obs_map_pub.publish(grid_obs);
+     observed_data_pub.publish(observed_data);
+    }
+
+     
 }
 
 
@@ -555,6 +564,7 @@ private:
  int xSamePos;
  int grid_update_query;
  int steps;
+ int obs_grid_done;
 
  int x_wall_min;
  int x_wall_max;
@@ -593,7 +603,7 @@ int main(int argc, char **argv)
     int counter;
     counter=0;
     ros::init(argc, argv, "grid_generator_node");
-    GridGeneratorNode grid_generator_node_2;
+    GridGeneratorNode grid_generator_node;
    
 
     // Control @ 10 Hz
@@ -603,13 +613,14 @@ int main(int argc, char **argv)
 	// while (ros::ok())
     
 
-    //grid_generator_node_2.matrix_function();
-    while(grid_generator_node_2.n.ok())
+    //grid_generator_node.matrix_function();
+    while(grid_generator_node.n.ok())
     {
+
          if (counter == 5){
-             grid_generator_node_2.map_request_function();
+             grid_generator_node.map_request_function();
          }
-        // if ((grid_generator_node_2.update_matrix_function()==1)){
+        // if ((grid_generator_node.update_matrix_function()==1)){
             
 
 
@@ -617,9 +628,9 @@ int main(int argc, char **argv)
 
         
 
-        if ((grid_generator_node_2.update_matrix_function()==1) && (grid_generator_node_2.check_grid_done()==1)){
-            std::cout << "data: --------------"<< std::endl; 
-            grid_generator_node_2.send_grid_function();
+        if ((grid_generator_node.update_matrix_function()==1) && (grid_generator_node.check_grid_done()==1)){
+            //std::cout << "data: --------------"<< std::endl; 
+            grid_generator_node.send_grid_function();
         }
 
         
