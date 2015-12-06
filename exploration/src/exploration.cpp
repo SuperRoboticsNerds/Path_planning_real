@@ -29,8 +29,8 @@ struct Edge
 };
 
 //Global 
-int rows =249;// 481; // cm 
-int cols = 245;//241; // cm 
+int rows =249; // 481 cm 
+int cols = 245; //245 cm 
 int num_nodes = 2500; 
 int robot_width=28; //odd number 
 int robot_radius = (int)round((robot_width/2.0));
@@ -166,7 +166,7 @@ void update_nodes()
 	int k=0;
 	int sum =0;
 	int erasenum = 0;
-	int square_size = 25; 
+	int square_size = 100; 
 
 	for(k=0; k<node_vec.size(); k++)
 	{
@@ -310,9 +310,20 @@ int movement_cost(node src, node dest)
 {
 	int heuristic = abs(src.x - dest.x) + abs(src.y - dest.y);
 	int total=0;
+	int visited_nodes_cost=0;
 
 
-	total= 20*heuristic + dest.weight;
+	for( int i = 0; i < node_vec.size(); i++ ) 
+	{
+		if( src.y == dest.y &&  node_vec[i].y == src.y && ((node_vec[i].x < src.x && node_vec[i].x > dest.x)||(node_vec[i].x > src.x && node_vec[i].x < dest.x)))	
+			visited_nodes_cost = visited_nodes_cost + node_vec[i].weight;
+
+		if( (src.x == dest.x) &&  (node_vec[i].x == src.x) && ((node_vec[i].y < src.y && node_vec[i].y > dest.y)||(node_vec[i].y > src.y && node_vec[i].y < dest.y)))	
+			visited_nodes_cost = visited_nodes_cost + node_vec[i].weight;
+	}
+		
+
+	total=650*heuristic + 27*dest.weight + 12*visited_nodes_cost;
 
 	return total;
 }
@@ -506,6 +517,7 @@ void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
     // printPath(parent, src, target);
     
    	int k = target;
+
   	//Store path
   	// printf("Edge   \n %d ", k);
 	while(k != src)
@@ -561,9 +573,8 @@ void clear_vecs()
 	path_vec.clear();
 }
 
-void current_robot_position_function(localization::Position msg){
-    //std::cout << "data: -------position-------"<< std::endl;
-
+void current_robot_position_function(localization::Position msg)
+{
     robot_x=(int)floor(msg.x*100.0);
     robot_y=(int)floor(msg.y*100.0);
 }
@@ -630,7 +641,7 @@ int main(int argc, char **argv)
     		graph = create_graph();
     		V=node_vec.size();
     		std::cout << "Choosing source..."<< std::endl;
-    		choose_closest_node();
+    		// choose_closest_node();
     		std::cout << "Choosing target..."<< std::endl;
     		if(!end) choose_target();
     		else end_node = 0;
