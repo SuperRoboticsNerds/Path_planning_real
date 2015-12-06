@@ -166,7 +166,7 @@ void update_nodes()
 	int k=0;
 	int sum =0;
 	int erasenum = 0;
-	int square_size = 100; //= 1m²
+	int square_size = 25; 
 
 	for(k=0; k<node_vec.size(); k++)
 	{
