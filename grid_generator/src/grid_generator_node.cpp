@@ -495,7 +495,7 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
     //     int wall_cost_vec[] = {99,95,70,50,35,20,10};
     // }
     int cost_steps = 9/steps;
-    int object_radius = 1;
+    int object_radius = 3; //TODO: look at this value
     geometry_msgs::Point point_out;
     point_out=msg->point;
 
@@ -513,8 +513,8 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
                         for(int i=(x-obj_width);i<=(x+obj_width);i++){
                             for(int j=(y-obj_width);j<=(y+obj_width);j++){
                                 //std::cout << "x: "<< x << ", y: "<< y<< std::endl;
-                                //matrix_a[(i)][(j)].weight=100;
-                                //add_cost_weight(i,j,cost_steps);
+                                matrix_a[(i)][(j)].weight=100;
+                                add_cost_weight(i,j,cost_steps);
                             }
                         }
                     }
@@ -576,8 +576,8 @@ void current_robot_position_function(localization::Position msg){
     robot_theta=msg.theta;
     if ((matrix_created==1) && (obs_grid_done==1)){
     int hitt_counter=0;
-        for(int i =0; i<30; i++){
-            for(int j = -i; j < i; j=j+1){
+        for(int i =0; i<60; i++){
+            for(int j = floor(-i*2/3); j < floor(i*2/3); j=j+1){
                // std::cout << "Step: 2"<< std::endl;
                 x_observed=(int)floor(robot_x+i*cos(robot_theta)-j*sin(robot_theta));
                 y_observed=(int)floor(robot_y+i*sin(robot_theta)+j*cos(robot_theta));
