@@ -166,7 +166,7 @@ void update_nodes()
 	int k=0;
 	int sum =0;
 	int erasenum = 0;
-	int square_size = 100; 
+	int square_size = 25; 
 
 	for(k=0; k<node_vec.size(); k++)
 	{
@@ -641,7 +641,7 @@ int main(int argc, char **argv)
     		graph = create_graph();
     		V=node_vec.size();
     		std::cout << "Choosing source..."<< std::endl;
-    		// choose_closest_node();
+    		choose_closest_node();
     		std::cout << "Choosing target..."<< std::endl;
     		if(!end) choose_target();
     		else end_node = 0;

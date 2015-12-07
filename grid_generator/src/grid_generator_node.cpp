@@ -83,6 +83,9 @@ public:
         steps=1;
         obs_grid_done = 0;
 
+        start_x=0;
+        start_y=22;
+
         // rows=300;
         // col=300;
 
@@ -102,7 +105,7 @@ public:
         map_subscriber = n.subscribe<localization::Map_message>("/map_reader/map", 1, &GridGeneratorNode::read_map_2,this);
         object_pos_sub_ = n.subscribe<geometry_msgs::PointStamped>("/object_pos",1,&GridGeneratorNode::add_object_to_grid,this);
         grid_update_request_sub_ = n.subscribe<std_msgs::Int32>("/grid_generator/update_query",1,&GridGeneratorNode::read_map_request_function,this);
-        robot_pos_sub_ = n.subscribe<localization::Position>("/position",1,&GridGeneratorNode::current_robot_position_function,this);
+        robot_pos_sub_ = n.subscribe<localization::Position>("/brain_position",1,&GridGeneratorNode::current_robot_position_function,this);
 
         //grid_cost_map_pub = n.advertise<std::vector< std::vector<struct position_node> >("test",1);
         //twist_sub_ = n.subscribe<geometry_msgs::Twist>("/motor_controller/twist",1,&MotorcontrollerNode::twist_function,this);
@@ -176,6 +179,16 @@ void matrix_to_vector_convert_function(){
     grid_obs.info.width = rows;
     grid_obs.info.height = col;
     grid_obs.info.resolution = (0.01*steps);
+
+    for(int i=(start_x); i<(start_x+40); i++ ){
+         for(int j=(start_y-22); j<(start_y+22);j++){
+    //         if((i>0) && (i<(rows-1))){
+    //             if((j>0)&&(j<(col-1))){
+                     matrix_a[i][j].observed=100;
+    //             }
+    //         }
+         }
+    }
 
 
 
@@ -527,28 +540,6 @@ send_grid_function();
 }
 
 
-// Vec2 is a simple x/y struct - it could very well be named Point for this use
-
-// bool isBetween(double a, double b, double c) {
-//     // return if c is between a and b
-//     double larger = (a >= b) ? a : b;
-//     double smaller = (a != larger) ? a : b;
-
-//     return c <= larger && c >= smaller;
-// }
-
-// bool pointOnLine(int x_robot, int y_robot , int x_point, int y_point, int x_wall, int y_wall) {
-//     if(x_point - x_robot == 0) return isBetween(y_robot, y_point, y_wall); // vertical line
-//     if(y_point - y_robot == 0) return isBetween(x_robot, x_point, x_wall); // horizontal line
-
-//     double Ax = (x_wall - x_robot) / (x_point - x_robot);
-//     double Ay = (y_wall - y_robot) / (y_point - y_robot);
-
-//     // We want Ax == Ay, so check if the difference is very small (floating
-//     // point comparison is fun!)
-
-//     return std::fabs(Ax - Ay) < 0.000001 && Ax >= 0.0 && Ax <= 1.0;
-// }
 bool check_intersection(double p0_x, double p0_y, double p1_x, double p1_y,
     double p2_x, double p2_y, double p3_x, double p3_y)
 {
@@ -572,73 +563,30 @@ bool check_intersection(double p0_x, double p0_y, double p1_x, double p1_y,
 
     return false; // No collision
 }
-
-// bool is_on(int x_robot,int,y_robot ,int x_point, int y_point, int x_wall, int y_wall){
-// return (collinear(a, b, c) && (within(x_robot, x_wall, x_point) if (a.x != b.x) else within(a.y, c.y, b.y)))
-// }
-// bool collinear(int x_robot, int y_robot , int x_point, int y_point, int x_wall, int y_wall){
-//     return (b.x - a.x) * (c.y - a.y) == (c.x - a.x) * (b.y - a.y)
-// }
-// bool within(p, q, r){
-//     return p <= q <= r or r <= q <= p
-// }
 void current_robot_position_function(localization::Position msg){
-    std::cout << "-- Position Start--"<< std::endl;
+    //std::cout << "-- Position Start--"<< std::endl;
     nav_msgs::GridCells wall_vector;
     geometry_msgs::Point wall_position;
 
 
     robot_x=msg.x*100.0;
     robot_y=msg.y*100.0;
-    int count_block =0;
     robot_theta=msg.theta;
-    std::cout << "-- for start--"<< std::endl;
     if ((matrix_created==1) && (obs_grid_done==1)){
-
-       // for(int i =0; i<=30; i++){
-       //      for(int j = -i; j <= i; j++){
-       //          //std::cout << "Step: 2"<< std::endl;
-       //          x_observed=(int)floor(robot_x+i*cos(robot_theta)-j*sin(robot_theta));
-       //          y_observed=(int)floor(robot_y+i*sin(robot_theta)+j*cos(robot_theta));
-
-       //          if((x_observed>0) && (x_observed<(rows-1))){
-       //              //std::cout << "Step: 3"<< std::endl;
-       //              if((y_observed>0)&&(y_observed<(col-1))){
-       //                          //std::cout << "Step: 4"<< std::endl;
-       //                  if(matrix_a[x_observed][y_observed].weight == 100){
-       //                      std::cout << "-- add wall vector--"<< std::endl;
-       //                      wall_position.x = x_observed;
-       //                      wall_position.y = y_observed;
-       //                      wall_position.z = 0.0;
-       //                      wall_vector.cells.push_back(wall_position);
-       //                  }
-       //              }
-       //          }
-       //      }
-       //  }
-
     int hitt_counter=0;
-        
-    std::cout << "-- for end--"<< std::endl;
-
-    std::cout << "rows: "<< rows << ", col: "<<  col<<std::endl;
-
-        //std::cout << "Step: 1"<< std::endl;
         for(int i =0; i<30; i++){
             for(int j = -i; j < i; j=j+1){
-                std::cout << "Step: 2"<< std::endl;
+               // std::cout << "Step: 2"<< std::endl;
                 x_observed=(int)floor(robot_x+i*cos(robot_theta)-j*sin(robot_theta));
                 y_observed=(int)floor(robot_y+i*sin(robot_theta)+j*cos(robot_theta));
                 if((x_observed>0) && (x_observed<(rows-1))){
-                    std::cout << "Step: 3"<< std::endl;
+                    //std::cout << "Step: 3"<< std::endl;
                     if((y_observed>0)&&(y_observed<(col-1))){
                         hitt_counter=0;
                         for(int i_wall=0; i_wall<=NUM_WALLS; i_wall++){
-                            std::cout << "Step: 4 "<< walls[i_wall][0]<<std::endl;
-                            if(!check_intersection(robot_x, robot_y, (double)x_observed, (double)y_observed, walls[i_wall][0]*100, walls[i_wall][1]*100, walls[i_wall][2]*100, walls[i_wall][3]*100)){
-                                std::cout << "Step: 5 --------------"<< std::endl;
+                            //std::cout << "Step: 4 "<< walls[i_wall][0]<<std::endl;
+                            if(check_intersection(robot_x, robot_y, (double)x_observed, (double)y_observed, walls[i_wall][0]*100, walls[i_wall][1]*100, walls[i_wall][2]*100, walls[i_wall][3]*100)){
 
-                            }else{
                                 hitt_counter++;
                             }
                         }
@@ -657,7 +605,7 @@ void current_robot_position_function(localization::Position msg){
      grid_obs_map_pub.publish(grid_obs);
      observed_data_pub.publish(observed_data); 
     }
-    std::cout << "-- Position End --"<< std::endl;
+    //std::cout << "-- Position End --"<< std::endl;
 }
 
 
@@ -682,6 +630,8 @@ private:
 
  int x_observed;
  int y_observed;
+ int start_x;
+ int start_y;
 
  double walls[100][4];
 
