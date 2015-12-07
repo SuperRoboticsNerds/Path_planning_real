@@ -197,6 +197,7 @@ void matrix_to_vector_convert_function(){
             grid_cost.data[((rows*i)+j)] = matrix_a[j][i].weight;
             grid_obs.data[((rows*i)+j)] = matrix_a[j][i].observed;
             vec_data.data[((rows*i)+j)] = matrix_a[j][i].weight;
+            observed_data.data[((rows*i)+j)] = matrix_a[j][i].observed;
 
         }
     }
@@ -228,6 +229,7 @@ void send_grid_function(){
         grid_cost_map_pub.publish(grid_cost);
         grid_obs_map_pub.publish(grid_obs);
         vec_map_pub.publish(vec_data);
+        observed_data_pub.publish(observed_data); 
         grid_update_query=0;
     //}
 }
@@ -511,8 +513,8 @@ void add_object_to_grid(const geometry_msgs::PointStamped::ConstPtr& msg) {
                         for(int i=(x-obj_width);i<=(x+obj_width);i++){
                             for(int j=(y-obj_width);j<=(y+obj_width);j++){
                                 //std::cout << "x: "<< x << ", y: "<< y<< std::endl;
-                                matrix_a[(i)][(j)].weight=100;
-                                add_cost_weight(i,j,cost_steps);
+                                //matrix_a[(i)][(j)].weight=100;
+                                //add_cost_weight(i,j,cost_steps);
                             }
                         }
                     }
