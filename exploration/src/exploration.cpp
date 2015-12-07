@@ -537,10 +537,33 @@ void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
 void choose_target()
 {	
 	std::vector<int> nonseen_vec;
-	int k=0;
+
+	int big_index = 0;
+	float dist = 0.0;
+	float square = 0.0;
+	float k1 =1.0;
+	float k2 = 1.0;
+	float division = 0.0;
+	float best_division =0.0;
+
+	for(int i=0; i<node_vec.size(); i++)
+	{
+		dist = k1*sqrt((robot_x - node_vec[i].x)*(robot_x - node_vec[i].x)+(robot_y - node_vec[i].y)*(robot_y - node_vec[i].y));
+		square = k2*node_vec[i].unseen_square;
+		division = square/dist;
+
+        if (division > best_division)
+        {
+        	best_division = division;
+        	big_index = i;
+        	// std::cout << "biggest_square = " << biggest_square << "  index = " << big_index << std::endl;
+        }
+    }
+
+	end_node = big_index; 
 
 	//Randomly choose a node from the unseen valid nodes
-
+	// int k=0;
 	// for(int i=0; i<node_vec.size(); i++)
 	// {
  //        if (node_vec[i].observed == 0)
@@ -551,20 +574,6 @@ void choose_target()
  //    }
 
 	// end_node =nonseen_vec[rand() % nonseen_vec.size()]; 
-
-	int biggest_square = 0;
-	int big_index = 0;
-	for(int i=0; i<node_vec.size(); i++)
-	{
-        if (node_vec[i].unseen_square > biggest_square)
-        {
-        	biggest_square = node_vec[i].unseen_square;
-        	big_index = i;
-        	// std::cout << "biggest_square = " << biggest_square << "  index = " << big_index << std::endl;
-        }
-    }
-
-	end_node = big_index; 
 
 }
 
