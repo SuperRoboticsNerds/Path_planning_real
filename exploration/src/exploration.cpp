@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <localization/Position.h>
+#include "std_msgs/Int32.h"
 
 
 struct node
@@ -42,12 +43,13 @@ ros::Publisher path_pub;
 ros::Subscriber robot_pos_sub_;
 ros::Subscriber grid_vec;
 ros::Subscriber observed_vec;
+ros::Subscriber back_home_path_sub;
 std::vector<float> data_grid;
 std::vector<float> observed_grid;
 std::vector< std::vector<node> > matrix(rows, std::vector<node>(cols));
 bool new_grid = false;
 bool new_obs = false;
-bool end = false;
+bool time_out = false;
 int V;
 int src_node = 0;
 int end_node=0;
@@ -606,6 +608,11 @@ void choose_closest_node()
     src_node = src_temp;
 }
 
+void back_home_request_function(std_msgs::Int32 msg)
+{
+    time_out = true;
+}
+
 
 
 int main(int argc, char **argv)
@@ -617,13 +624,12 @@ int main(int argc, char **argv)
 	grid_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_map/to_nodes",100, read_grid_vect);
 	observed_vec = n.subscribe<std_msgs::Float32MultiArray>("/grid_map/observed",100, read_observed_vect);
 	robot_pos_sub_ = n.subscribe<localization::Position>("/position",100,current_robot_position_function);
+	back_home_path_sub = n.subscribe<std_msgs::Int32>("/go_home",100,back_home_request_function); // receive msg to get out of the maze !!!
 
 	path_pub = n.advertise<nav_msgs::GridCells>( "/nodes_generator/path", 100);
 	marker_valid_pub = n.advertise<visualization_msgs::MarkerArray>( "/valid_nodes", 1);
 	marker_path_pub = n.advertise<visualization_msgs::MarkerArray>( "/path_nodes", 1);
 	
-
-	// receive msg to get out of the maze !!!
 
   	double control_frequency = 10.0;
     ros::Rate loop_rate(control_frequency);
@@ -653,7 +659,7 @@ int main(int argc, char **argv)
     		std::cout << "Choosing source..."<< std::endl;
     		choose_closest_node();
     		std::cout << "Choosing target..."<< std::endl;
-    		if(!end) choose_target();
+    		if(!time_out) choose_target();
     		else end_node = 0;
 			std::cout << "Finding path..."<< std::endl;
     		find_path(graph, src_node, end_node);
