@@ -166,7 +166,7 @@ void update_nodes()
 	int k=0;
 	int sum =0;
 	int erasenum = 0;
-	int square_size = 25; 
+	int square_size = 50; 
 
 	for(k=0; k<node_vec.size(); k++)
 	{
@@ -535,8 +535,7 @@ void find_path(std::vector<std::vector<Edge> > graph, int src, int target)
 }
 
 void choose_target()
-{	
-	std::vector<int> nonseen_vec;
+{		
 
 	int big_index = 0;
 	float dist = 0.0;
@@ -546,17 +545,19 @@ void choose_target()
 	float division = 0.0;
 	float best_division =0.0;
 
+
+	std::cout << "  node_vec size = " << node_vec.size() << std::endl;
 	for(int i=0; i<node_vec.size(); i++)
 	{
 		dist = k1*sqrt((robot_x - node_vec[i].x)*(robot_x - node_vec[i].x)+(robot_y - node_vec[i].y)*(robot_y - node_vec[i].y));
 		square = k2*node_vec[i].unseen_square;
-		division = square/dist;
+		division = square;///dist;
 
         if (division > best_division)
         {
         	best_division = division;
         	big_index = i;
-        	// std::cout << "biggest_square = " << biggest_square << "  index = " << big_index << std::endl;
+        	std::cout << "  index = " << big_index << std::endl;
         }
     }
 
